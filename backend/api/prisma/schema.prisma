@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions        Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  interviews Interview[]
+  interviewParticipations InterviewParticipant[]
+}
+
+model Session {
+  id                 String    @id @default(cuid())
+  tokenHash          String    @unique
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent          String?
+  ipAddress          String?
+  expiresAt          DateTime
+  createdAt          DateTime  @default(now())
+  lastActiveAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+
+
+
+enum InterviewStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum InterviewFormat {
+  LIVE
+  ASYNC
+}
+
+model Interview {
+  id          String          @id @default(cuid())
+  creatorId   String
+  title       String
+  description String?
+  instructions String?
+  format      InterviewFormat @default(LIVE)
+  status      InterviewStatus @default(DRAFT)
+
+  // Scheduling
+  scheduledAt     DateTime?
+  durationMinutes Int             @default(30)
+  timezone        String          @default("UTC")
+  maxParticipants Int?
+
+  // GetStream integration references
+  streamCallId        String? @unique
+  streamChatChannelId String? @unique
+
+  // Proctoring configuration
+  preventCopyPasteEnabled       Boolean @default(true)
+  tabSwitchDetectionEnabled    Boolean @default(true)
+  fullscreenRequired           Boolean @default(true)
+  faceDetectionEnabled         Boolean @default(true)
+  multipleFaceDetectionEnabled Boolean @default(true)
+  suspiciousGestureDetectionEnabled Boolean @default(true)
+  cameraDisconnectDetectionEnabled  Boolean @default(true)
+
+  // Lifecycle timestamps
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  participants InterviewParticipant[]
+  attempts InterviewAttempt[]
+
+  @@index([creatorId])
+  @@index([status, scheduledAt])
+}
+
+
+
+enum ParticipantStatus {
+  INVITED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+  EXPIRED
+}
+
+model InterviewParticipant {
+  id          String            @id @default(cuid())
+  interviewId String
+  userId      String?
+  email       String
+  status      ParticipantStatus @default(INVITED)
+
+  // Invitation tracking
+  invitationTokenHash String?   @unique
+  invitedAt           DateTime  @default(now())
+  invitationExpiresAt DateTime?
+  acceptedAt          DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  attempts InterviewAttempt[]
+
+  @@unique([interviewId, email])
+  @@index([interviewId, status])
+  @@index([userId])
+}
+
+
+enum InterviewAttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  COMPLETED
+  ABANDONED
+}
+
+model InterviewAttempt {
+  id            String                @id @default(cuid())
+  interviewId   String
+  participantId String
+  status        InterviewAttemptStatus @default(NOT_STARTED)
+
+  startedAt   DateTime?
+  submittedAt DateTime?
+  completedAt DateTime?
+
+  // Interview session configuration and results
+  streamCallId        String?
+  streamChatChannelId String?
+  score               Float?
+  evaluation          Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  proctoringEvents ProctoringEvent[]
+
+  interview   Interview            @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  participant InterviewParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([interviewId, status])
+  @@index([participantId, createdAt])
+}
+
+
+
+enum ProctoringEventType {
+  COPY_ATTEMPT
+  CUT_ATTEMPT
+  PASTE_ATTEMPT
+  TAB_SWITCH
+  FULLSCREEN_EXIT
+  FACE_MISSING
+  MULTIPLE_FACES
+  SUSPICIOUS_GESTURE
+  CAMERA_DISCONNECTED
+}
+
+enum ProctoringReviewStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  CONFIRMED
+}
+
+model ProctoringEvent {
+  id        String                 @id @default(cuid())
+  attemptId String
+  type      ProctoringEventType
+  status    ProctoringReviewStatus @default(PENDING)
+
+  // When the event happened
+  occurredAt DateTime @default(now())
+  durationMs Int?
+
+  // Supporting details, not raw video
+  details Json?
+
+  // Optional host review
+  reviewedAt DateTime?
+  reviewedById String?
+  reviewNotes String?
+
+  createdAt DateTime @default(now())
+
+  attempt InterviewAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId, occurredAt])
+  @@index([attemptId, type])
+  @@index([status, occurredAt])
+}
