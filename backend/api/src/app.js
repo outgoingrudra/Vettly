@@ -12,12 +12,16 @@ app.disable("x-powered-by");
 
 app.use(helmet());
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true,
-  })
-);
+if (process.env.NODE_ENV === "development") {
+  app.use(cors());
+} else {
+  app.use(
+    cors({
+      origin: process.env.FRONTEND_URL,
+      credentials: true,
+    })
+  );
+}
 
 app.use(express.json({ limit: "16kb" }));
 app.use(cookieParser());
