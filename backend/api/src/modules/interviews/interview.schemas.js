@@ -11,3 +11,26 @@ export const createInterviewSchema = z.object({
   timezone: z.string().trim().min(1).max(100).default("UTC"),
   maxParticipants: z.number().int().min(1).max(1000).optional(),
 });
+
+export const acceptInvitationSchema = z.object({
+  token: z.string().min(32).max(200),
+});
+
+
+
+export const createProctoringEventSchema = z.object({
+  type: z.enum([
+    "COPY_ATTEMPT",
+    "CUT_ATTEMPT",
+    "PASTE_ATTEMPT",
+    "TAB_SWITCH",
+    "FULLSCREEN_EXIT",
+    "FACE_MISSING",
+    "MULTIPLE_FACES",
+    "SUSPICIOUS_GESTURE",
+    "CAMERA_DISCONNECTED",
+  ]),
+  occurredAt: z.coerce.date().optional(),
+  durationMs: z.number().int().min(0).max(3600000).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
+});

@@ -144,6 +144,8 @@ model InterviewParticipant {
   acceptedAt          DateTime?
   startedAt           DateTime?
   completedAt         DateTime?
+  streamSyncedAt  DateTime?
+  streamSyncError String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

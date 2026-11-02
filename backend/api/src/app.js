@@ -5,6 +5,8 @@ import cors from "cors";
 import helmet from "helmet";
 import authRoutes from "./modules/auth/auth.routes.js";
 import interviewRoutes from "./modules/interviews/interview.routes.js";
+import streamRoutes from "./modules/stream/stream.routes.js";
+
 
 const app = express();
 
@@ -36,4 +38,5 @@ app.get("/api/v1/health", (req, res) => {
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/interviews", interviewRoutes);
+app.use("/api/v1/stream", streamRoutes);
 export default app;
