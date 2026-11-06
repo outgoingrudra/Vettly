@@ -9,6 +9,8 @@ export async function apiRequest(
   endpoint,
   { method = "GET", body, headers = {}, ...options } = {},
 ) {
+  const isFormData = body instanceof FormData;
+
   const response = await fetch(
     `${API_BASE_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`,
     {
@@ -16,12 +18,14 @@ export async function apiRequest(
       method,
       credentials: "include",
       headers: {
-        ...(body !== undefined
+        ...(!isFormData && body !== undefined
           ? { "Content-Type": "application/json" }
           : {}),
         ...headers,
       },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined
+        ? { body: isFormData ? body : JSON.stringify(body) }
+        : {}),
     },
   );
 

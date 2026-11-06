@@ -46,8 +46,14 @@ export default function Login() {
         password: form.password,
       });
 
-      const destination = location.state?.from || "/dashboard";
-      navigate(destination, { replace: true });
+      const destination = location.state?.from;
+
+      navigate(
+        typeof destination === "string" && destination.startsWith("/")
+          ? destination
+          : "/dashboard",
+        { replace: true }
+      );
     } catch (err) {
       setError(err.message || "Unable to sign in. Please try again.");
     } finally {
@@ -126,6 +132,7 @@ export default function Login() {
               value={form.password}
               onChange={handleChange}
               placeholder="Enter your password"
+              maxLength={128}
               required
               className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-20 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
             />

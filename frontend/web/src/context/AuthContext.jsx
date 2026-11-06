@@ -4,8 +4,9 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useState, 
+  useState,
 } from "react";
+
 import apiRequest from "../services/api.js";
 
 const AuthContext = createContext(null);
@@ -17,8 +18,14 @@ export function AuthProvider({ children }) {
   const refreshUser = useCallback(async () => {
     try {
       const response = await apiRequest("/auth/me");
+
       const currentUser =
-        response?.user ?? response?.data?.user ?? response?.data ?? response;
+        response?.data?.user ?? response?.user ?? null;
+
+      if (!currentUser) {
+        setUser(null);
+        return null;
+      }
 
       setUser(currentUser);
       return currentUser;
@@ -26,7 +33,10 @@ export function AuthProvider({ children }) {
       setUser(null);
 
       if (error.status !== 401) {
-        console.error("Unable to load the current user:", error.message);
+        console.error(
+          "Unable to load the current user:",
+          error.message
+        );
       }
 
       return null;
@@ -40,28 +50,30 @@ export function AuthProvider({ children }) {
   }, [refreshUser]);
 
   const login = useCallback(
-  async (credentials) => {
-    await apiRequest("/auth/login", {
-      method: "POST",
-      body: credentials,
-    });
+    async (credentials) => {
+      await apiRequest("/auth/login", {
+        method: "POST",
+        body: credentials,
+      });
 
-    const currentUser = await refreshUser();
+      const currentUser = await refreshUser();
 
-    if (!currentUser) {
-      throw new Error(
-        "Login succeeded, but the user session could not be loaded. Please check your backend session configuration.",
-      );
-    }
+      if (!currentUser) {
+        throw new Error(
+          "Login succeeded, but the user session could not be loaded."
+        );
+      }
 
-    return currentUser;
-  },
-  [refreshUser],
-);
+      return currentUser;
+    },
+    [refreshUser]
+  );
 
   const logout = useCallback(async () => {
     try {
-      await apiRequest("/auth/logout", { method: "POST" });
+      await apiRequest("/auth/logout", {
+        method: "POST",
+      });
     } finally {
       setUser(null);
     }
@@ -88,7 +100,9 @@ export function useAuth() {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider");
+    throw new Error(
+      "useAuth must be used inside AuthProvider"
+    );
   }
 
   return context;

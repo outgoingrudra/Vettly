@@ -9,9 +9,21 @@ export default function VerifyEmail() {
   const token = searchParams.get("token")?.trim() || "";
 
   const [status, setStatus] = useState("idle");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    !token
+      ? "The verification token is missing. Please open the complete link from your verification email."
+      : ""
+  );
 
   async function handleVerify() {
+    if (!token) {
+      setError(
+        "The verification token is missing. Please open the complete link from your verification email."
+      );
+      setStatus("error");
+      return;
+    }
+
     setError("");
     setStatus("loading");
 
@@ -20,7 +32,7 @@ export default function VerifyEmail() {
       setStatus("success");
     } catch (err) {
       setError(
-        err.message || "Verification failed. Your link may have expired.",
+        err.message || "Verification failed. Your link may have expired."
       );
       setStatus("error");
     }
@@ -39,13 +51,19 @@ export default function VerifyEmail() {
         </div>
 
         {!token ? (
-          <p
-            role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-          >
-            The verification token is missing. Please open the complete link
-            from your verification email.
-          </p>
+          <>
+            <p
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+            >
+              {error}
+            </p>
+
+            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+              Please check your verification email and open the complete
+              verification link.
+            </p>
+          </>
         ) : status === "success" ? (
           <div
             role="status"
@@ -90,13 +108,24 @@ export default function VerifyEmail() {
           </Link>
         </p>
 
-        {status === "error" && (
+        {status === "error" && token && (
           <p className="text-center text-sm">
             <Link
               to="/resend-verification"
               className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
             >
               Request a new verification link
+            </Link>
+          </p>
+        )}
+
+        {!token && (
+          <p className="text-center text-sm">
+            <Link
+              to="/resend-verification"
+              className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+            >
+              Resend verification email
             </Link>
           </p>
         )}

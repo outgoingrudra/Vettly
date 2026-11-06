@@ -6,8 +6,10 @@ import { signupSchema } from "./auth.schemas.js";
 import { createHash, randomBytes } from "node:crypto";
 import { loginSchema } from "./auth.schemas.js";
 import { publishEmailJob } from "../../config/rabbitmq.js";
+ 
 
-
+import fs from "node:fs/promises";
+import path from "node:path";
 
 export async function signup(req, res) {
   const validation = signupSchema.safeParse(req.body);
@@ -237,13 +239,42 @@ export async function logout(req, res) {
 
 
 export async function getProfile(req, res) {
-  return res.status(200).json({
-    success: true,
-    data: {
-      user: req.user,
-    },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        emailVerifiedAt: true,
+        profilePicture: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { user },
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve profile.",
+    });
+  }
 }
+
+
+
 
 
 
@@ -568,10 +599,12 @@ export async function forgotPassword(req, res) {
     });
   }
 
+ 
+
   const genericResponse = {
     success: true,
     message:
-      "If an account exists for this email, password reset instructions will be sent.",
+  "If an account exists for this email, password-reset instructions will be sent to it. Check your inbox.",
   };
 
   try {
@@ -663,12 +696,12 @@ export async function resetPassword(req, res) {
     token.length === 0 ||
     token.length > 200 ||
     typeof password !== "string" ||
-    password.length < 12 ||
+    password.length < 8 ||
     password.length > 128
   ) {
     return res.status(400).json({
       success: false,
-      message: "A valid token and password of 12–128 characters are required.",
+      message: "A valid token and password of 8–128 characters are required.",
     });
   }
 
@@ -736,6 +769,121 @@ export async function resetPassword(req, res) {
     return res.status(500).json({
       success: false,
       message: "Unable to reset password. Please try again.",
+    });
+  }
+}
+
+
+  
+const uploadDir = path.resolve(process.cwd(), "uploads/profiles");
+
+export async function uploadProfilePicture(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select a profile picture.",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { profilePicture: true },
+    });
+
+    if (!user) {
+      await fs.unlink(req.file.path).catch(() => {});
+
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const profilePicture = `/uploads/profiles/${req.file.filename}`;
+
+    // Save the image path in PostgreSQL.
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { profilePicture },
+    });
+
+    // Delete the old image only after successful database update.
+    if (user.profilePicture) {
+      const oldPath = path.resolve(
+        process.cwd(),
+        user.profilePicture.replace(/^\/+/, "")
+      );
+
+      if (oldPath.startsWith(uploadDir + path.sep)) {
+        await fs.unlink(oldPath).catch(() => {});
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile picture updated successfully.",
+      data: {
+        profilePicture,
+      },
+    });
+  } catch (error) {
+    if (req.file?.path) {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
+
+    console.error("Upload profile picture error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to upload profile picture.",
+    });
+  }
+}
+
+
+
+
+export async function deleteProfilePicture(req, res) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { profilePicture: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { profilePicture: null },
+    });
+
+    if (user.profilePicture) {
+      const oldPath = path.resolve(
+        process.cwd(),
+        user.profilePicture.replace(/^\/+/, "")
+      );
+
+      if (oldPath.startsWith(uploadDir + path.sep)) {
+        await fs.unlink(oldPath).catch(() => {});
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile picture deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete profile picture error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete profile picture.",
     });
   }
 }

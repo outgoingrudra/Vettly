@@ -11,6 +11,7 @@ model User {
   name            String
   email           String    @unique
   passwordHash    String
+  profilePicture  String?
   emailVerifiedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

@@ -9,24 +9,33 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   async function handleSubmit(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-    setSubmitted(false);
+  event.preventDefault();
 
-    try {
-      await requestPasswordReset(email.trim());
-      setSubmitted(true);
-    } catch (err) {
-      setError(
-        err.message || "Unable to process your request. Please try again.",
-      );
-    } finally {
-      setLoading(false);
-    }
+  setLoading(true);
+  setError("");
+  setSubmitted(false);
+  setSuccessMessage("");
+
+  try {
+    const response = await requestPasswordReset(email.trim());
+
+    setSuccessMessage(
+      response?.message ||
+        "If an account exists for this email, password-reset instructions will be sent to it. Check your inbox."
+    );
+
+    setSubmitted(true);
+  } catch (err) {
+    setError(
+      err.message || "Unable to process your request. Please try again."
+    );
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <AuthLayout

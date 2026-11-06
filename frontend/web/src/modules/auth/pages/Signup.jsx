@@ -55,6 +55,11 @@ export default function Signup() {
       return;
     }
 
+    if (form.password.length > 128) {
+      setError("Your password cannot exceed 128 characters.");
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       setError("Your passwords do not match.");
       return;
@@ -170,6 +175,7 @@ export default function Signup() {
             onChange={handleChange}
             placeholder="At least 8 characters"
             minLength={8}
+            maxLength={128}
             required
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
           />
@@ -188,6 +194,7 @@ export default function Signup() {
             onChange={handleChange}
             placeholder="Re-enter your password"
             minLength={8}
+            maxLength={128}
             required
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
           />
