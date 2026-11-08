@@ -4,7 +4,8 @@
 4. lib/prisma.js 
 
 
-
+- npx prisma generate
+- cloude amqp
 
 2-3 topics
 

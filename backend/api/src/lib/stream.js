@@ -1,13 +1,9 @@
-
 import { StreamClient } from "@stream-io/node-sdk";
 
-const apiKey = process.env.STREAM_API_KEY;
-const apiSecret = process.env.STREAM_API_SECRET;
-
-if (!apiKey || !apiSecret) {
-  throw new Error("Missing STREAM_API_KEY or STREAM_API_SECRET.");
+let client;
+export default function getStream() {
+  const { STREAM_API_KEY, STREAM_API_SECRET } = process.env;
+  if (!STREAM_API_KEY || !STREAM_API_SECRET) throw new Error("Video service is not configured.");
+  client ??= new StreamClient(STREAM_API_KEY, STREAM_API_SECRET);
+  return client;
 }
-
-const stream = new StreamClient(apiKey, apiSecret);
-
-export default stream;

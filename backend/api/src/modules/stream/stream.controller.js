@@ -1,4 +1,4 @@
-import stream from "../../lib/stream.js";
+import getStream from "../../lib/stream.js";
 import prisma from "../../lib/prisma.js";
 
 export async function getStreamToken(req, res) {
@@ -26,18 +26,19 @@ export async function getStreamToken(req, res) {
           where: {
             userId,
             status: {
-              in: ["ACCEPTED", "IN_PROGRESS"],
+              in: ["IN_PROGRESS"],
             },
           },
           select: {
             id: true,
             streamSyncedAt: true,
+            attempts: { where: { status: "IN_PROGRESS", deadline: { gte: new Date() } }, select: { deadline: true }, take: 1 },
           },
         },
       },
     });
 
-    if (!interview || interview.status !== "PUBLISHED") {
+    if (!interview || interview.status === "DRAFT") {
       return res.status(404).json({
         success: false,
         message: "Published interview not found.",
@@ -47,7 +48,7 @@ export async function getStreamToken(req, res) {
     const isCreator = interview.creatorId === userId;
     const participant = interview.participants[0];
 
-    if (!isCreator && !participant) {
+    if (!isCreator && !participant?.attempts.length) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to join this interview.",
@@ -83,9 +84,10 @@ export async function getStreamToken(req, res) {
       });
     }
 
-    const token = stream.generateUserToken({
+    const ttl = isCreator ? 3600 : Math.max(1, Math.min(3600, Math.floor((participant.attempts[0].deadline - Date.now()) / 1000)));
+    const token = getStream().generateUserToken({
       user_id: user.id,
-      validity_in_seconds: 3600,
+      validity_in_seconds: ttl,
     });
 
     return res.status(200).json({
@@ -99,7 +101,7 @@ export async function getStreamToken(req, res) {
         },
         callId: interview.streamCallId,
         chatChannelId: interview.streamChatChannelId,
-        expiresIn: 3600,
+        expiresIn: ttl,
       },
     });
   } catch (error) {
@@ -186,6 +188,7 @@ export async function setupInterviewStream(req, res) {
     ];
 
     // Register users with Stream.
+    const stream = getStream();
     await stream.upsertUsers(members);
 
     // Create or retrieve the chat channel.
@@ -270,6 +273,7 @@ export async function addParticipantToStream(interview, user) {
   }
 
   // Ensure the participant exists in Stream.
+  const stream = getStream();
   await stream.upsertUsers([
     {
       id: user.id,

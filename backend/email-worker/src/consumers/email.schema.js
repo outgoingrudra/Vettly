@@ -6,6 +6,9 @@ const emailName = z.string().trim().min(1).max(100);
 const emailUrl = z.string().url().max(2048);
 
 export const emailJobSchema = z.discriminatedUnion("type", [
+  ...["interview_invitation", "result_published"].map(type => z.object({
+    type: z.literal(type), to: emailAddress, data: z.object({ url: z.url({ protocol: /^https?$/ }).max(2048) }).strict(),
+  }).strict()),
   z.object({
     type: z.literal("welcome"),
     to: emailAddress,

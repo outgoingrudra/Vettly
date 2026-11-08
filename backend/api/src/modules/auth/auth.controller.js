@@ -6,6 +6,8 @@ import { signupSchema } from "./auth.schemas.js";
 import { createHash, randomBytes } from "node:crypto";
 import { loginSchema } from "./auth.schemas.js";
 import { publishEmailJob } from "../../config/rabbitmq.js";
+ 
+
 
 
 
@@ -237,13 +239,42 @@ export async function logout(req, res) {
 
 
 export async function getProfile(req, res) {
-  return res.status(200).json({
-    success: true,
-    data: {
-      user: req.user,
-    },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        emailVerifiedAt: true,
+        profilePicture: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { user },
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve profile.",
+    });
+  }
 }
+
+
+
 
 
 
@@ -568,10 +599,12 @@ export async function forgotPassword(req, res) {
     });
   }
 
+ 
+
   const genericResponse = {
     success: true,
     message:
-      "If an account exists for this email, password reset instructions will be sent.",
+  "If an account exists for this email, password-reset instructions will be sent to it. Check your inbox.",
   };
 
   try {
@@ -663,12 +696,12 @@ export async function resetPassword(req, res) {
     token.length === 0 ||
     token.length > 200 ||
     typeof password !== "string" ||
-    password.length < 12 ||
+    password.length < 8 ||
     password.length > 128
   ) {
     return res.status(400).json({
       success: false,
-      message: "A valid token and password of 12–128 characters are required.",
+      message: "A valid token and password of 8–128 characters are required.",
     });
   }
 
@@ -739,4 +772,3 @@ export async function resetPassword(req, res) {
     });
   }
 }
-

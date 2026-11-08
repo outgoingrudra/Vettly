@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { signup, login , logout } from "./auth.controller.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { getProfile } from "./auth.controller.js";
+import { parsePicture, parseResume, uploadPicture, deletePicture, uploadResume, deleteResume, candidateProfile } from "./profile-files.js";
 import {
   listSessions,
   revokeSession,
@@ -10,7 +11,8 @@ import {
   verifyEmail ,
   resendVerificationEmail ,
   forgotPassword,
-  resetPassword
+  resetPassword,
+
 } from "./auth.controller.js";
 
 const router = Router();
@@ -71,6 +73,22 @@ router.post("/signup", signupLimiter, signup);
 router.post("/login", loginLimiter, login);
 router.post("/logout", logout);
 router.get("/me", requireAuth, getProfile);
+// Profile picture
+router.post(
+  "/profile-picture",
+  requireAuth,
+  parsePicture,
+  uploadPicture
+);
+
+router.delete(
+  "/profile-picture",
+  requireAuth,
+  deletePicture
+);
+router.post("/resume", requireAuth, parseResume, uploadResume);
+router.delete("/resume", requireAuth, deleteResume);
+router.get("/profiles/:userId", requireAuth, candidateProfile);
 router.get("/sessions", requireAuth, listSessions);
 router.delete("/sessions/:id", requireAuth, revokeSession);
 router.delete("/sessions", requireAuth, revokeAllSessions);

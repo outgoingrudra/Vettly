@@ -1,3 +1,4 @@
+import { sendEmail } from "../services/email.service.js";
 
 import { getRabbitChannel, queueNames } from "../config/rabbitmq.js";
 import { emailJobSchema } from "./email.schema.js";
@@ -11,6 +12,13 @@ const MAX_RETRIES = 3;
 
 async function processEmailJob(job) {
   switch (job.type) {
+    case "interview_invitation":
+    case "result_published": {
+      const invitation = job.type === "interview_invitation";
+      const subject = invitation ? "You are invited to an interview" : "Your interview result is available";
+      const instruction = invitation ? "Sign in to join your interview." : "Sign in to view your published scorecard.";
+      return sendEmail({ to: job.to, subject, text: [instruction, job.data.url].join("\n") });
+    }
     case "welcome":
       return sendWelcomeEmail({
         to: job.to,

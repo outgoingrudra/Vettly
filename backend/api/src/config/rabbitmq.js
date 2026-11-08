@@ -91,7 +91,7 @@ export async function publishEmailJob(job) {
     {
       persistent: true,
       contentType: "application/json",
-      messageId: crypto.randomUUID(),
+      messageId: randomUUID(),
     },
   );
 
