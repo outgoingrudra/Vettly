@@ -509,9 +509,15 @@ export async function listInterviewParticipants(req, res) {
       });
     }
 
+    const search = req.query.search ?? "";
+    if (typeof search !== "string" || search.length > 254) {
+      return res.status(400).json({ success: false, message: "Invalid candidate search." });
+    }
+    const contains = { contains: search.trim(), mode: "insensitive" };
     const where = {
       interviewId,
       ...(status ? { status } : {}),
+      ...(search.trim() ? { OR: [{ email: contains }, { user: { name: contains } }] } : {}),
     };
 
     const [participants, total] = await Promise.all([
@@ -522,12 +528,15 @@ export async function listInterviewParticipants(req, res) {
           email: true,
           userId: true,
           status: true,
-          attempts: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, deadline: true, terminationReason: true } },
+          user: { select: { name: true } },
+          attempts: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, deadline: true, submittedAt: true, score: true, warningCount: true, terminationReason: true } },
           invitedAt: true,
           invitationExpiresAt: true,
           acceptedAt: true,
           startedAt: true,
           completedAt: true,
+          streamSyncedAt: true,
+          streamSyncError: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -543,7 +552,7 @@ export async function listInterviewParticipants(req, res) {
       data: {
         participants: participants.map(p => {
           const attempt = p.attempts[0];
-          const expired = attempt?.status === "IN_PROGRESS" && attempt.deadline < new Date();
+          const expired = attempt?.status === "IN_PROGRESS" && attempt.deadline && attempt.deadline < new Date();
           return { ...p, outcome: expired ? "DID_NOT_SUBMIT" : attempt?.status ?? p.status };
         }),
         pagination: {

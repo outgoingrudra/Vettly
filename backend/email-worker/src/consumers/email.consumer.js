@@ -3,6 +3,8 @@ import { sendEmail } from "../services/email.service.js";
 import { getRabbitChannel, queueNames } from "../config/rabbitmq.js";
 import { emailJobSchema } from "./email.schema.js";
 import { sendWelcomeEmail } from "../services/welcome-email.service.js";
+import { renderInterviewInvitationEmail } from "../templates/interview-invitation.template.js";
+import { renderResultPublishedEmail } from "../templates/result-published.template.js";
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -17,7 +19,19 @@ async function processEmailJob(job) {
       const invitation = job.type === "interview_invitation";
       const subject = invitation ? "You are invited to an interview" : "Your interview result is available";
       const instruction = invitation ? "Sign in to join your interview." : "Sign in to view your published scorecard.";
-      return sendEmail({ to: job.to, subject, text: [instruction, job.data.url].join("\n") });
+      const html = invitation
+        ? renderInterviewInvitationEmail(job.data)
+        : renderResultPublishedEmail(job.data);
+      const context = [
+        job.data.interviewTitle && `Interview: ${job.data.interviewTitle}`,
+        job.data.hostName && `Host: ${job.data.hostName}`,
+      ].filter(Boolean);
+      return sendEmail({
+        to: job.to,
+        subject,
+        html,
+        text: [...context, instruction, job.data.url].join("\n"),
+      });
     }
     case "welcome":
       return sendWelcomeEmail({

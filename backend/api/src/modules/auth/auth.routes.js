@@ -2,7 +2,7 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { signup, login , logout } from "./auth.controller.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
-import { getProfile } from "./auth.controller.js";
+import { getProfile, updateProfile } from "./auth.controller.js";
 import { parsePicture, parseResume, uploadPicture, deletePicture, uploadResume, deleteResume, candidateProfile } from "./profile-files.js";
 import {
   listSessions,
@@ -73,6 +73,7 @@ router.post("/signup", signupLimiter, signup);
 router.post("/login", loginLimiter, login);
 router.post("/logout", logout);
 router.get("/me", requireAuth, getProfile);
+router.patch("/me", requireAuth, updateProfile);
 // Profile picture
 router.post(
   "/profile-picture",

@@ -1,0 +1,52 @@
+/* All landing styles live under Home; the account pages share no overrides. */
+:root {
+  --home-bg:#f6f7ef; --home-ink:#18392e; --home-muted:#4e6358; --home-rule:#c9d1c3;
+  --print:#103d31; --print-type:#eff8d9; --band-hue:94; --button-bg:#214c3a; --button-type:#fffdf4;
+}
+.home-page {
+  background:var(--home-bg); color:var(--home-ink);
+}
+:root[data-theme=Clay] {
+  --home-bg:#faf2e7; --home-ink:#4f3028; --home-muted:#71584b; --home-rule:#d6c3b0;
+  --print:#61372b; --print-type:#ffebca; --band-hue:35; --button-bg:#71402d;
+}
+:root[data-theme=Night] {
+  --home-bg:#172328; --home-ink:#f2f3e4; --home-muted:#b5c8bf; --home-rule:#46574e;
+  --print:#102f37; --print-type:#e2f8e8; --band-hue:167; --button-bg:#bce1c4; --button-type:#173126;
+}
+.home-hero,.home-demo,.home-faq {
+  max-width:1536px; margin:auto; padding:clamp(48px,5.6vw,90px) clamp(22px,6vw,102px);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(30px,5vw,86px);align-items:center;
+}
+.home-intro h1 {font:400 clamp(60px,6.8vw,116px)/.98 Georgia,serif;letter-spacing:-.075em}
+.home-page em {font-weight:400}
+.home-intro p,.home-demo p {max-width:39ch;color:var(--home-muted);line-height:1.6}
+.home-intro p {margin:25px 0 30px;font-size:clamp(16px,1.35vw,21px)}
+.home-links {display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.home-links a {font-size:14px;font-weight:650;text-underline-offset:5px}
+.home-cta {display:inline-flex;align-items:center;gap:23px;padding:14px 20px;border-radius:5px;background:var(--button-bg);color:var(--button-type);text-decoration:none}
+.invitation-print {position:relative;isolation:isolate;overflow:hidden;margin:0;align-self:stretch;display:grid;grid-template-rows:auto 1fr auto;
+  border-radius:7px;background:var(--print);color:var(--print-type);background-image:radial-gradient(#e6fadd2c .65px,transparent .95px);background-size:13px 13px}
+.print-heading,.invitation-print figcaption {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px clamp(20px,2.6vw,42px)}
+.print-heading strong {font-size:23px;letter-spacing:-1.5px}
+.print-heading span,.invitation-print small,.invitation-print figcaption>span {font:12px/1.4 Consolas,monospace}
+.pleated-band {display:block;width:100%;height:clamp(230px,20vw,340px);transform:rotate(-9deg)}
+.invitation-print figcaption {position:relative;border-top:1px dashed #dce9cf62;background:#0001}
+.invitation-print figcaption:before,.invitation-print figcaption:after {content:"";position:absolute;top:-8px;width:16px;height:16px;background:var(--home-bg);border-radius:50%}
+.invitation-print figcaption:before {left:-8px}.invitation-print figcaption:after {right:-8px}
+.invitation-print small,.invitation-print figcaption strong {display:block}
+.invitation-print figcaption strong {font:400 clamp(24px,2.3vw,38px)/1.2 Georgia,serif;letter-spacing:-.04em}
+.home-demo,.home-faq {border-top:1px solid var(--home-rule)}
+.home-demo h2,.home-faq h2 {font:400 clamp(36px,4.2vw,70px)/1.04 Georgia,serif;letter-spacing:-.055em}
+.home-demo p {margin:17px 0 0}.home-demo .desk {padding:0;color:var(--ink)}
+.home-demo .folder {width:100%;border:1px solid var(--home-rule);border-radius:6px;background:var(--paper);padding:0;box-shadow:none}
+.home-demo .folder:before,.home-demo .folder-tab {display:none}
+.home-demo .paper {border:0;background:transparent;min-height:280px}.home-demo .stage-nav {margin:8px 0 0}
+.home-demo .stage-nav button {color:var(--home-muted)}.home-demo .stage-nav button[aria-pressed=true]{border-color:var(--home-ink);color:var(--home-ink)}
+.home-faq {align-items:start}.home-faq details {border-color:var(--home-rule)}
+@media(max-width:740px){
+  .home-hero,.home-demo,.home-faq{grid-template-columns:1fr;gap:30px;padding:36px 22px}
+  .home-intro h1{font-size:clamp(54px,11.5vw,82px)}.home-intro p{margin:16px 0 20px}
+  .pleated-band{height:200px}.print-heading,.invitation-print figcaption{padding:12px 18px}
+  .home-demo h2 br{display:none}.home-demo p{margin-top:12px}
+}

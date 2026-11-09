@@ -1,0 +1,13 @@
+.candidate-room {max-width:980px;min-width:0}
+.page-back { display: inline-block; margin-bottom: 20px; font-size: 13px; font-weight: 650; }
+.candidate-room section>p {margin:14px 0}
+.check-in,.candidate-question {background:var(--paper);border:1px solid var(--home-rule);border-radius:8px;padding:clamp(16px,3vw,32px);margin:20px 0}
+.check-in ul {padding-left:22px}.check-in video {display:block;max-width:240px;width:100%;margin:14px 0;border-radius:6px}
+.attempt-summary {display:flex;flex-wrap:wrap;gap:12px 22px;position:sticky;top:0;z-index:2;background:var(--paper);padding:12px;border-block:1px solid var(--home-rule);font-size:14px;font-variant-numeric:tabular-nums}
+.candidate-room .candidate-question {padding:16px 20px;border:1px solid var(--home-rule)}
+.candidate-question legend {overflow-wrap:anywhere}.candidate-question label {display:flex;align-items:center;gap:12px;min-height:42px;cursor:pointer}.candidate-question input {accent-color:var(--button-bg)}
+.attempt-note {border-inline-start:3px solid var(--button-bg);padding:8px 12px}
+.candidate-room .str-video {max-height:420px;overflow:auto}
+.video-room { display: grid; grid-template-rows: minmax(260px, 1fr) auto; min-height: 360px; background: #10191b; }
+.video-room .str-video__speaker-layout { min-height: 260px; }
+.video-room .str-video__call-controls { justify-content: center; padding: 10px; }

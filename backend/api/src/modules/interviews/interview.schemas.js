@@ -6,7 +6,7 @@ export const createInterviewSchema = z.object({
   description: z.string().trim().max(5000).optional(),
   instructions: z.string().trim().max(10000).optional(),
   format: z.enum(["LIVE", "ASYNC"]).default("LIVE"),
-  scheduledAt: z.coerce.date().optional(),
+  scheduledAt: z.coerce.date().nullable().optional(),
   durationMinutes: z.number().int().min(1).max(525600).default(30),
   preventCopyPasteEnabled: z.boolean().optional(),
   tabSwitchDetectionEnabled: z.boolean().optional(),
@@ -17,7 +17,7 @@ export const createInterviewSchema = z.object({
   cameraDisconnectDetectionEnabled: z.boolean().optional(),
   warningLimit: z.number().int().min(1).max(1000).default(3),
   timezone: z.string().trim().min(1).max(100).default("UTC"),
-  maxParticipants: z.number().int().min(1).max(1000).optional(),
+  maxParticipants: z.number().int().min(1).max(1000).nullable().optional(),
 });
 
 export const acceptInvitationSchema = z.object({

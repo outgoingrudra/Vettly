@@ -39,10 +39,24 @@ export async function preview(req, res) {
       format: true,
       status: true,
       durationMinutes: true,
+      scheduledAt: true,
+      warningLimit: true,
+      preventCopyPasteEnabled: true,
+      tabSwitchDetectionEnabled: true,
+      fullscreenRequired: true,
+      faceDetectionEnabled: true,
+      multipleFaceDetectionEnabled: true,
+      suspiciousGestureDetectionEnabled: true,
+      cameraDisconnectDetectionEnabled: true,
     },
   });
   if (!interview) fail(404, "Interview not found.");
-  res.json({ success: true, interview });
+  const attempt = await prisma.interviewAttempt.findFirst({
+    where: { interviewId: interview.id, participant: { userId: req.user.id } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true, deadline: true, submittedAt: true, terminationReason: true },
+  });
+  res.json({ success: true, interview, attempt, serverTime: new Date() });
 }
 
 export async function inviteParticipant(req, res) {
@@ -50,12 +64,17 @@ export async function inviteParticipant(req, res) {
   if (!email.success) fail(400, "Valid email required.");
   const interview = await prisma.interview.findFirst({
     where: { id: req.params.id, creatorId: req.user.id, status: { not: "ARCHIVED" } },
+    select: { id: true, title: true, creator: { select: { name: true } } },
   });
   if (!interview) fail(404, "Interview not found.");
   await publishEmailJob({
     type: "interview_invitation",
     to: email.data,
-    data: { url: link("/interviews/" + interview.id + "/join") },
+    data: {
+      url: link("/interviews/" + interview.id + "/join"),
+      interviewTitle: interview.title,
+      hostName: interview.creator.name,
+    },
   });
   res.status(202).json({ success: true, message: "Invitation email queued." });
 }
@@ -132,11 +151,19 @@ export async function join(req, res) {
   });
   const { interview, attempt } = result;
   if (interview.format === "LIVE") {
-    await addParticipantToStream(interview, req.user);
-    await prisma.interviewParticipant.update({
-      where: { id: attempt.participantId },
-      data: { streamSyncedAt: new Date() },
-    });
+    try {
+      await addParticipantToStream(interview, req.user);
+      await prisma.interviewParticipant.update({
+        where: { id: attempt.participantId },
+        data: { streamSyncedAt: new Date(), streamSyncError: null },
+      });
+    } catch (error) {
+      await prisma.interviewParticipant.update({
+        where: { id: attempt.participantId },
+        data: { streamSyncedAt: null, streamSyncError: String(error.message || error).slice(0, 1000) },
+      });
+      fail(502, "Video access is being restored. Ask the host to retry video access, then resume.");
+    }
   }
   res.json({
     success: true,
@@ -148,6 +175,8 @@ export async function join(req, res) {
       deadline: attempt.deadline,
     },
     questions: interview.questions,
+    warningCount: attempt.warningCount,
+    serverTime: new Date(),
   });
 }
 
@@ -258,12 +287,35 @@ export async function result(req, res) {
       score: true,
       evaluation: true,
       feedback: true,
+      submittedAt: true,
+      interview: { select: { title: true } },
       participant: { select: { userId: true, email: true } },
     },
   });
   if (!attempt) fail(404, "Scorecard unavailable.");
   res.json({ success: true, data: attempt });
 }
+export async function myAttempts(req, res) {
+  const page = Number(req.query.page ?? 1);
+  if (!Number.isSafeInteger(page) || page < 1 || page > 100000) fail(400, "Invalid page.");
+  const where = { participant: { userId: req.user.id } };
+  const take = 12;
+  const [attempts, total, active, awaiting, published] = await Promise.all([
+    prisma.interviewAttempt.findMany({
+      where, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take, skip: (page - 1) * take,
+      select: {
+        id: true, status: true, deadline: true, startedAt: true, submittedAt: true,
+        interview: { select: { id: true, title: true, format: true } },
+      },
+    }),
+    prisma.interviewAttempt.count({ where }),
+    prisma.interviewAttempt.count({ where: { ...where, status: "IN_PROGRESS", deadline: { gt: new Date() } } }),
+    prisma.interviewAttempt.count({ where: { ...where, status: "SUBMITTED" } }),
+    prisma.interviewAttempt.count({ where: { ...where, status: "COMPLETED" } }),
+  ]);
+  res.json({ success: true, data: { attempts, totalPages: Math.ceil(total / take), summary: { total, active, awaiting, published } } });
+}
+
 export async function history(req, res) {
   const attempts = await prisma.interviewAttempt.findMany({
     where: { participant: { userId: req.user.id }, status: "COMPLETED" },
@@ -284,7 +336,10 @@ export async function publishResult(req, res) {
   if (!parsed.success) fail(400, "Invalid feedback.");
   const attempt = await prisma.interviewAttempt.findFirst({
     where: { id: req.params.attemptId, interview: { creatorId: req.user.id, status: "ARCHIVED" } },
-    include: { participant: { select: { email: true } } },
+    include: {
+      participant: { select: { email: true } },
+      interview: { select: { title: true, creator: { select: { name: true } } } },
+    },
   });
   if (!attempt) fail(409, "Close entry before publishing results.");
   const active = await prisma.interviewAttempt.count({
@@ -303,7 +358,11 @@ async function notifyResult(attempt, res) {
     await publishEmailJob({
       type: "result_published",
       to: attempt.participant.email,
-      data: { url: link("/results/" + attempt.id) },
+      data: {
+        url: link("/results/" + attempt.id),
+        interviewTitle: attempt.interview.title,
+        hostName: attempt.interview.creator.name,
+      },
     });
     res.json({ success: true, emailQueued: true });
   } catch {
@@ -320,7 +379,10 @@ async function notifyResult(attempt, res) {
 export async function resendResult(req, res) {
   const attempt = await prisma.interviewAttempt.findFirst({
     where: { id: req.params.attemptId, status: "COMPLETED", interview: { creatorId: req.user.id } },
-    include: { participant: true },
+    include: {
+      participant: { select: { email: true } },
+      interview: { select: { title: true, creator: { select: { name: true } } } },
+    },
   });
   if (!attempt) fail(404, "Published scorecard not found.");
   await notifyResult(attempt, res);

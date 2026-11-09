@@ -149,5 +149,5 @@ export async function candidateProfile(req, res) {
       "&ik-s=" +
       signature;
   }
-  res.set("Cache-Control", "no-store").json({ success: true, data: { ...profile, resumeUrl } });
+  res.set("Cache-Control", "no-store").json({ success: true, data: { ...profile, hasResume: Boolean(resumePath), resumeUrl } });
 }

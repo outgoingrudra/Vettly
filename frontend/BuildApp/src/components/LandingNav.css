@@ -1,0 +1,58 @@
+/* The landing masthead aligns with the hero and keeps both sections available on phones. */
+.frame > .landing-nav {
+  --nav-accent: #204c3c;
+  --nav-on-accent: #fffdf5;
+  width: 100%;
+  margin: 0 auto;
+  min-height: 68px;
+  padding: 0 max(6%, calc((100% - 1332px) / 2));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+[data-theme="Clay"] .landing-nav { --nav-accent: #78442f; }
+[data-theme="Night"] .landing-nav { --nav-accent: #b9d9c4; --nav-on-accent: #182b23; }
+.landing-nav .brand { justify-self: start; gap: 10px; color: var(--nav-accent); }
+.landing-nav .logomark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  clip-path: none;
+  border-radius: 10px 10px 10px 3px;
+  background: var(--nav-accent);
+}
+.landing-nav .logomark::after {
+  content: "";
+  width: 21px;
+  height: 19px;
+  background: var(--nav-on-accent);
+  clip-path: polygon(0 0,32% 0,55% 60%,77% 0,100% 0,64% 100%,38% 100%);
+}
+.landing-nav nav { display: flex; gap: 5px; margin: 0; }
+.landing-nav nav a,.nav-signin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 7px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.landing-nav nav a:hover { background: var(--page); text-decoration: none; }
+.nav-actions { display: flex; align-items: center; justify-content: flex-end; gap: 15px; }
+.nav-signin { gap: 15px; background: var(--nav-accent); color: var(--nav-on-accent); }
+.nav-signin:hover { filter: brightness(1.12); }
+@media (max-width: 720px) {
+  .frame > .landing-nav { grid-template-columns: 1fr auto; gap: 0 8px; padding: 4px 20px 0; }
+  .landing-nav nav { grid-row: 2; grid-column: 1 / -1; margin-top: 0; border-top: 1px solid var(--rule); }
+  .landing-nav nav a { padding: 0 12px; font-size: 13px; }
+  .landing-nav nav a:first-child { margin-left: -12px; }
+  .nav-actions { grid-row: 1; grid-column: 2; gap: 5px; }
+  .nav-signin { padding-inline: 11px; gap: 8px; }
+}

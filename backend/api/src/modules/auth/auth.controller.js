@@ -273,6 +273,19 @@ export async function getProfile(req, res) {
   }
 }
 
+export async function updateProfile(req, res) {
+  const name = signupSchema.shape.name.safeParse(req.body?.name);
+  if (!name.success) {
+    return res.status(400).json({ success: false, message: "Name must be 2 to 100 characters." });
+  }
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { name: name.data },
+    select: { id: true, name: true, email: true, emailVerifiedAt: true, profilePicture: true, createdAt: true },
+  });
+  return res.json({ success: true, data: { user } });
+}
+
 
 
 

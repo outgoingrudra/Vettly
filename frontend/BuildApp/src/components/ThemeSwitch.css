@@ -1,0 +1,45 @@
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--home-rule, var(--rule));
+  border-radius: 8px;
+  background: var(--page);
+}
+.theme-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--home-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.theme-switch button:hover { color: var(--home-ink, var(--ink)); }
+.theme-switch button[aria-pressed="true"] {
+  border-color: var(--home-rule, var(--rule));
+  background: var(--paper);
+  color: var(--home-ink, var(--ink));
+  box-shadow: 0 1px 4px #00000012;
+}
+.theme-swatch {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border: 1px solid #00000024;
+  border-radius: 50%;
+}
+.theme-swatch-paper { background: linear-gradient(135deg, #fffdf6 50%, #204c3c 50%); }
+.theme-swatch-clay { background: linear-gradient(135deg, #fff6eb 50%, #a76042 50%); }
+.theme-swatch-night { background: linear-gradient(135deg, #252b31 50%, #b9d9c4 50%); }
+@media (max-width: 920px) {
+  .theme-switch button { padding: 0 8px; }
+  .theme-name { display: none; }
+}

@@ -8,6 +8,7 @@ import {
   inviteParticipant,
   result,
   history,
+  myAttempts,
   publishResult,
   resendResult,
 } from "./attempt.controller.js";
@@ -37,6 +38,7 @@ const mailLimit = rateLimit({
   legacyHeaders: false,
 });
 router.get("/results/mine", requireAuth, history);
+router.get("/attempts/mine", requireAuth, myAttempts);
 router.get("/:id/join", requireAuth, preview);
 router.post("/:id/join", requireAuth, join);
 router.put("/:id/questions", requireAuth, setQuestions);
