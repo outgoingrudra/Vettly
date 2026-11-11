@@ -10,16 +10,17 @@ import Dashboard from './Dashboard';
 export default function Workspace({ user, id, editing, creating }) {
   const [record,setRecord] = useState(null);
   const [failure,setFailure] = useState('');
+  const [retry,setRetry] = useState(0);
   useEffect(()=>{
     if (!id) return;
-    let active=true;
-    request('/interviews/'+encodeURIComponent(id)).then(r=>{if(active)setRecord(r.data.interview)})
+    let active=true;setFailure('');
+    request('/interviews/'+encodeURIComponent(id),undefined,'GET',{fresh:retry>0}).then(r=>{if(active)setRecord(r.data.interview)})
       .catch(e=>{if(active)setFailure(problem(e))});
     return ()=>{active=false};
-  },[id]);
+  },[id,retry]);
   if (!id && !creating) return <Dashboard user={user}/>;
   let content;
-  if(failure) content=<p role="alert">{failure} <a href="">Retry</a></p>;
+  if(failure) content=<p role="alert">{failure} <button onClick={()=>setRetry(value=>value+1)}>Retry</button></p>;
   else if(id && !record) content=<p role="status" className="wait">Opening interview…</p>;
   else if(creating && !user.emailVerifiedAt) content=<section><h1>Verify your email.</h1><p>Verify your account to create an interview. <a href="/account">Open account details</a></p></section>;
   else if(creating || (editing && record?.status==='DRAFT')) content=<DraftEditor interview={record}/>;

@@ -25,7 +25,7 @@ export function finishLogin() {
   if (next?.startsWith('/')) {
     try {
       const url = new URL(next, location.origin);
-      if (url.origin === location.origin && /^\/(account|host(?:\/.*)?|interviews\/[^/]+\/join|results\/[^/]+)\/?$/.test(url.pathname)) {
+      if (url.origin === location.origin && /^\/(account|host(?:\/.*)?|interviews\/[^/]+\/(?:join|assessment|video)|results\/[^/]+)\/?$/.test(url.pathname)) {
         destination = url.href;
       }
     } catch {}

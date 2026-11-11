@@ -38,15 +38,10 @@ function AppNav({ theme, change, user }) {
         <span aria-hidden="true">{user?.name?.slice(0, 1) || '•'}</span>}
       My profile
     </a> : <a className="app-wordmark" href={authPage ? '/' : '/host'}>Vettly<span> / {authPage ? 'Account' : 'Workspace'}</span></a>}
-    <nav aria-label={authPage ? 'Account navigation' : 'Workspace navigation'}>
-      {authPage ? <>
-        <a href="/login" aria-current={path === '/login' ? 'page' : undefined}>Sign in</a>
-        <a href="/signup" aria-current={path === '/signup' ? 'page' : undefined}>Create account</a>
-      </> : <>
+    {!authPage && <nav aria-label="Workspace navigation">
         <a href="/host" aria-current={path === '/host' ? 'page' : undefined}>Interviews</a>
         <a href="/account" aria-current={path === '/account' ? 'page' : undefined}>Account</a>
-      </>}
-    </nav>
+    </nav>}
     <ThemeSwitch theme={theme} change={change}/>
   </header>;
 }

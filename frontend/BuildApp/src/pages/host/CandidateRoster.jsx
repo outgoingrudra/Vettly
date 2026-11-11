@@ -65,7 +65,7 @@ export default function CandidateRoster({ interview }) {
             {person.attempts[0]?.submittedAt && <small>Submitted {new Date(person.attempts[0].submittedAt).toLocaleString()}</small>}</div>
             {person.attempts[0]?.score != null && <div className="roster-score">
               <strong>{person.attempts[0].score}{maximum > 0 && ' / ' + maximum}</strong>
-              <small>marks{person.attempts[0].warningCount > 0 && ' · ' + person.attempts[0].warningCount + ' warnings'}</small>
+              <small>{maximum === 1 ? 'mark' : 'marks'}{person.attempts[0].warningCount > 0 && ' · ' + person.attempts[0].warningCount + ' warnings'}</small>
             </div>}
             <div className="roster-actions">
               {interview.format === 'LIVE' && person.userId && ['ACCEPTED', 'IN_PROGRESS'].includes(person.status) && person.streamSyncError && <StreamRetry interviewId={interview.id} person={person} onDone={reload}/>}

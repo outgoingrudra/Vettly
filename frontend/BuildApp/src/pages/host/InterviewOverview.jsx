@@ -1,11 +1,12 @@
 import { ProctoringSummary } from "../../components/ProctoringSettings";
-import React, { lazy, Suspense, useState } from "react";
+import React, { useState } from "react";
 import { request } from "../../api";
 import CandidateRoster from "./CandidateRoster";
 import ShareInvitation from "./ShareInvitation";
 import { hostPath, formatName, statusName, problem } from "./host";
+import { navigate } from "../../navigation";
 
-const VideoRoom = lazy(() => import("../candidate/VideoRoom"));
+
 
 export default function InterviewOverview({ interview, update }) {
   const {
@@ -20,7 +21,7 @@ export default function InterviewOverview({ interview, update }) {
   const [busy, setBusy] = useState(""),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
-  const [inRoom, setInRoom] = useState(false);
+
   const [email, setEmail] = useState("");
   const draft = status === "DRAFT",
     open = status === "PUBLISHED",
@@ -54,6 +55,11 @@ export default function InterviewOverview({ interview, update }) {
     if (live) await setupVideo();
     else setMessage("Entry is open.");
   }
+  async function deleteDraft() {
+    if (!window.confirm(`Delete the draft “${title}”? This cannot be undone.`)) return;
+    await request("/interviews/" + id, undefined, "DELETE");
+    navigate("/host");
+  }
   return (
     <section>
       <div className="workspace-heading">
@@ -65,7 +71,7 @@ export default function InterviewOverview({ interview, update }) {
       </div>
       <p className="metadata">
         {formatName[format]} · {durationMinutes} minutes · {questions.length}{" "}
-        questions
+        {questions.length === 1 ? "question" : "questions"}
         {interview.scheduledAt &&
           " · Starts " + new Date(interview.scheduledAt).toLocaleString()}
         {interview.maxParticipants &&
@@ -74,17 +80,8 @@ export default function InterviewOverview({ interview, update }) {
       {interview.description && (
         <p className="instructions">{interview.description}</p>
       )}
-      {live && (open || inRoom) && interview.streamCallId && (
-        <section>
-          <button onClick={() => setInRoom(!inRoom)}>
-            {inRoom ? "Leave video room" : "Join video room"}
-          </button>
-          {inRoom && (
-            <Suspense fallback={<p>Opening video…</p>}>
-              <VideoRoom id={id} />
-            </Suspense>
-          )}
-        </section>
+      {live && !draft && interview.streamCallId && (
+        <a className="action" href={hostPath(id) + "/video"}>Join video room</a>
       )}
       <div className="overview-grid">
         <article>
@@ -94,7 +91,7 @@ export default function InterviewOverview({ interview, update }) {
           </p>
           <h2>Proctoring</h2>
           <ProctoringSummary settings={interview} />
-          <h2>Answer key</h2>
+          <details className="host-answer-key"><summary>Answer key · {questions.length} {questions.length === 1 ? "question" : "questions"}</summary>
           {questions.length === 0 ? (
             <p>No questions added yet.</p>
           ) : (
@@ -110,6 +107,7 @@ export default function InterviewOverview({ interview, update }) {
               ))}
             </ol>
           )}
+          </details>
         </article>
         <aside className="host-controls">
           <section>
@@ -128,6 +126,9 @@ export default function InterviewOverview({ interview, update }) {
                   onClick={() => run("start", start)}
                 >
                   {busy === "start" ? "Starting…" : "Start interview"}
+                </button>
+                <button disabled={!!busy} onClick={() => run("delete", deleteDraft)}>
+                  {busy === "delete" ? "Deleting…" : "Delete draft"}
                 </button>
               </>
             )}

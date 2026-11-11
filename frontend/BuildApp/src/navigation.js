@@ -6,7 +6,18 @@ export function navigate(destination, { replace = false } = {}) {
   }
   history[replace ? 'replaceState' : 'pushState'](null, '', url.href);
   window.dispatchEvent(new Event('vettly:navigate'));
-  window.scrollTo(0, 0);
+  if (!url.hash) {
+    window.scrollTo(0, 0);
+    return;
+  }
+  // Wait until React has rendered the destination section.
+  requestAnimationFrame(() => {
+    let id;
+    try { id = decodeURIComponent(url.hash.slice(1)); } catch { id = url.hash.slice(1); }
+    const section = document.getElementById(id);
+    if (section) section.scrollIntoView();
+    else window.scrollTo(0, 0);
+  });
 }
 
 export function handleInternalLink(event) {

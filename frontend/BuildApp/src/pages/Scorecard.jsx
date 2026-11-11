@@ -5,13 +5,13 @@ export function Answers({ result }) {
   const { evaluation, score } = result;
   if (!evaluation?.items?.length) return <p>No scored questions in this interview.</p>;
   return <>
-    <h3>{score} / {evaluation.maximum} marks</h3>
+    <h3>{score} / {evaluation.maximum} {evaluation.maximum === 1 ? 'mark' : 'marks'}</h3>
     <ol className="answer-key">{evaluation.items.map(item =>
       <li key={item.questionId}>
         <strong>{item.prompt}</strong>
         <p>Selected answer · {item.options[item.selectedOption] ?? 'Unanswered'}</p>
         <p>Correct answer · {item.options[item.correctOption]}</p>
-        <small>{item.earned} / {item.marks} marks</small>
+        <small>{item.earned} / {item.marks} {item.marks === 1 ? 'mark' : 'marks'}</small>
       </li>
     )}</ol>
   </>;

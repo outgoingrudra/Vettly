@@ -37,5 +37,8 @@
   .app-wordmark span { display: none; }
 }
 @media(max-width: 520px) {
-  .app-nav nav { display: none; }
+  .frame > .app-nav { flex-wrap: wrap; padding-block: 5px; }
+  .app-nav nav { display: flex; order: 3; width: 100%; margin: 0; gap: 18px; border-top: 1px solid var(--home-rule, var(--rule)); }
+  .app-nav nav a { min-height: 36px; }
+  .app-nav .theme-switch { margin-left: auto; }
 }

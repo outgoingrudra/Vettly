@@ -84,10 +84,16 @@ export async function getStreamToken(req, res) {
       });
     }
 
-    const ttl = isCreator ? 3600 : Math.max(1, Math.min(3600, Math.floor((participant.attempts[0].deadline - Date.now()) / 1000)));
+    const now = Math.floor(Date.now() / 1000);
+    const secondsLeft = isCreator
+      ? 3600
+      : Math.floor((participant.attempts[0].deadline.getTime() - Date.now()) / 1000);
+    const ttl = Math.max(1, Math.min(3600, secondsLeft));
+    // Allow for clock drift between this server and Stream when validating the JWT.
     const token = getStream().generateUserToken({
       user_id: user.id,
-      validity_in_seconds: ttl,
+      iat: now - 60,
+      exp: now + ttl,
     });
 
     return res.status(200).json({

@@ -11,3 +11,213 @@
 .video-room { display: grid; grid-template-rows: minmax(260px, 1fr) auto; min-height: 360px; background: #10191b; }
 .video-room .str-video__speaker-layout { min-height: 260px; }
 .video-room .str-video__call-controls { justify-content: center; padding: 10px; }
+.video-session > button { margin: 10px 0 18px; }
+
+.interview-views,.question-steps {display:flex;align-items:center;flex-wrap:wrap;gap:1rem;margin:1rem 0}
+.interview-views {border-bottom:1px solid var(--home-rule)}
+.interview-views a {padding:.65rem .25rem;text-decoration:none}
+.interview-views [aria-current="page"] {border-bottom:3px solid currentColor;font-weight:700}
+.live-stage {max-width:1200px}
+.video-session .video-room {min-height:clamp(360px,58vh,700px);border-radius:12px;overflow:hidden}
+.candidate-room .str-video {max-height:none}
+.answer-sheet[hidden] {display:none}
+
+.workspace.candidate-room,.workspace.live-stage {width:min(1180px,100%);max-width:none}
+.workspace .assessment-layout {display:grid;grid-template-columns:minmax(155px,220px) minmax(0,1fr);align-items:start;gap:clamp(16px,3vw,40px);margin-top:24px}
+.question-map,.workspace .answer-sheet,.overview-grid>article {background:var(--paper);border:1px solid var(--home-rule);border-radius:12px;padding:clamp(18px,3vw,38px);min-width:0}
+.question-map {padding:20px}
+.workspace .question-map h2 {font:650 1rem system-ui}
+.question-map progress {width:100%;height:7px;accent-color:var(--button-bg)}
+.question-map p,.workspace .answer-sheet>legend {font:600 .8rem system-ui;color:var(--home-muted)}
+.question-numbers {display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.workspace .question-numbers button {min-width:36px}
+.workspace .question-numbers [data-answered=true] {background:var(--button-bg);color:var(--button-type)}
+.question-numbers [aria-current] {outline:2px solid var(--focus);outline-offset:2px}
+.workspace .answer-sheet>legend {background:var(--paper);padding:3px 9px;border:1px solid var(--home-rule);border-radius:5px}
+.workspace .answer-sheet .candidate-question {padding:0;margin:0 0 20px;border:0;background:transparent}
+.workspace .candidate-question legend {font:500 clamp(22px,3vw,33px)/1.25 Georgia,serif;margin-bottom:8px}
+.workspace .candidate-question small {display:block;color:var(--home-muted);margin-bottom:16px}
+.workspace .candidate-question .answer-option {display:flex;gap:12px;align-items:center;border:1px solid var(--home-rule);border-radius:8px;padding:12px 15px;margin-top:8px;font-weight:500;overflow-wrap:anywhere}
+.answer-option:has(input:checked) {outline:2px solid var(--button-bg);outline-offset:-2px;background:var(--page)}
+.question-steps {justify-content:flex-end;border-top:1px solid var(--home-rule);padding-top:18px;margin-bottom:0}
+.room-placeholder {display:grid;align-content:center;justify-items:center;gap:18px;min-height:45vh;background:#132022;color:#fff;border-radius:12px;padding:24px;text-align:center}
+.room-placeholder h2 {font:500 clamp(24px,3vw,36px)/1.2 Georgia,serif}
+.room-placeholder p {max-width:48ch}
+.room-recovery {display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:14px}
+.room-recovery a {color:#fff;text-underline-offset:4px}
+.live-stage h1 {margin-bottom:20px}
+.host-answer-key {margin-top:24px}
+.workspace .overview-grid {gap:22px;align-items:start}
+@media(max-width:700px){.workspace .assessment-layout {grid-template-columns:1fr}.question-map {padding:14px}.workspace .overview-grid {grid-template-columns:1fr}.attempt-summary {position:static}}
+
+/* Stream's video tiles and menus use dark surfaces in every workspace theme. */
+.video-session .str-video {
+  color-scheme: dark;
+  color: var(--str-video__text-color1);
+}
+.video-room .str-video__participant-details__name {
+  color: #fff;
+  background-color: #172128;
+  font-weight: 600;
+}
+.video-room .str-video__video-placeholder__avatar {
+  color: #fff;
+}
+.workspace .room-placeholder button:not(.action) {
+  background: #f4f7f6;
+  color: #172128;
+}
+
+.room-participants {margin:16px 0;border:1px solid var(--home-rule);border-radius:8px;background:var(--paper);color:var(--home-ink)}
+.room-participants summary {display:list-item;list-style:disclosure-closed inside;padding:12px 16px;cursor:pointer}
+.room-participants[open] summary {list-style-type:disclosure-open}
+.room-participants ul {margin:0;padding:0 16px 8px;list-style:none}
+.room-participants li {display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--home-rule)}
+.room-participants strong {overflow-wrap:anywhere}
+.room-participants li span {color:var(--home-muted);font-size:.875rem}
+.room-sidebar {display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,340px);gap:24px;align-items:start;margin-top:16px}
+.room-chat {min-width:0;background:var(--paper);border:1px solid var(--home-rule);border-radius:10px;padding:16px}
+.room-chat h2 {font-size:1.15rem;margin-bottom:12px}
+.room-chat-messages {list-style:none;margin:0 0 14px;padding:0;min-height:120px;max-height:320px;overflow:auto}
+.room-chat-messages li {padding:8px 0;border-bottom:1px solid var(--home-rule)}
+.room-chat-messages p {overflow-wrap:anywhere;margin:4px 0 0}
+.room-chat-meta {display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.room-chat-meta time,.room-chat-empty {font-size:12px;color:var(--home-muted)}
+.room-chat-error {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;color:var(--error)}
+.room-chat form {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.room-chat form label {grid-column:1/-1}
+.room-chat input {min-width:0;width:100%;padding:8px;border:1px solid var(--home-rule);border-radius:5px;background:var(--paper);color:var(--ink)}
+@media(max-width:760px){.room-sidebar {grid-template-columns:1fr}}
+.workspace .assessment-layout:has(.room-chat) {grid-template-columns:minmax(150px,190px) minmax(0,1fr) minmax(240px,300px)}
+.assessment-layout .room-chat {margin:0;position:sticky;top:20px}
+@media(max-width:1050px){.workspace .assessment-layout:has(.room-chat) {grid-template-columns:minmax(150px,190px) minmax(0,1fr)}.assessment-layout .room-chat {grid-column:2;position:static}}
+@media(max-width:700px){.workspace .assessment-layout:has(.room-chat) {grid-template-columns:1fr}.assessment-layout .room-chat {grid-column:auto}}
+.warning-count {padding:2px 10px;border:1px solid var(--home-rule);border-radius:99px;font-size:13px}
+.warning-count[data-active=true] {background:#f5dfc2;color:#633706;border-color:#d5a666}
+.security-alert {display:flex;align-items:start;justify-content:space-between;gap:16px;margin:18px 0;padding:16px 18px;border:1px solid #d5a666;border-inline-start:5px solid #a65c13;border-radius:8px;background:#fff0d9;color:#4b2b0c}
+.security-alert[data-counted=false] {border-color:#9eb8c4;border-inline-start-color:#39758b;background:#e9f3f6;color:#173846}
+.security-alert strong {font-size:16px}
+.security-alert p {margin:4px 0 0}
+.workspace .security-alert button {flex-shrink:0;background:transparent;border:1px solid currentColor;color:inherit}
+@media(max-width:550px){.security-alert {flex-direction:column}.workspace .security-alert button {align-self:flex-end}}
+
+.workspace .room-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--home-rule);
+}
+.workspace .room-heading h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 3vw, 2.6rem);
+  overflow-wrap: anywhere;
+}
+.room-heading .room-role {
+  margin: 0 0 4px;
+  font-size: .82rem;
+  font-weight: 650;
+  color: var(--home-muted);
+}
+.room-heading .metadata { margin: 6px 0 0; }
+.room-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(210px, 21vw, 280px);
+  gap: 16px;
+  align-items: start;
+}
+.speaker-stage {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #10191b;
+  color: white;
+}
+.stage-bar, .room-drawer > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.stage-bar { background: #1c272a; font-size: .9rem; }
+.workspace .stage-bar button {
+  color: white;
+  background: transparent;
+  border: 1px solid #617175;
+  padding: 5px 12px;
+}
+.room-grid .room-participants { margin: 0; max-height: 64vh; overflow: auto; }
+.room-grid .room-participants li { display: grid; gap: 4px; }
+.room-grid .video-room { border-radius: 0; }
+.room-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  box-sizing: border-box;
+  margin: 0;
+  width: min(400px, 100%);
+  height: 100dvh;
+  max-width: 100%;
+  max-height: 100dvh;
+  padding: 0;
+  border: 0;
+  border-inline-start: 1px solid var(--home-rule);
+  background: var(--paper);
+  color: var(--home-ink);
+}
+.room-drawer[open] { display: flex; flex-direction: column; }
+.room-drawer::backdrop { background: rgb(10 18 20 / 55%); }
+.room-drawer > header { border-bottom: 1px solid var(--home-rule); }
+.workspace .room-drawer h2 { margin: 0; font-size: 1.4rem; }
+.room-drawer .room-chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  border: 0;
+}
+.room-drawer .room-chat-messages { flex: 1; min-height: 0; max-height: none; }
+@media (max-width: 820px) {
+  .room-grid { grid-template-columns: minmax(0, 1fr); }
+  .room-grid .room-participants { max-height: 240px; }
+}
+
+.room-clock {
+  font-variant-numeric: tabular-nums;
+  border-inline-start: 3px solid var(--button-bg);
+  padding-inline-start: 9px;
+}
+.room-clock[data-urgent=true] {
+  color: #622f0d;
+  background: #ffebcd;
+  border-color: #ae591c;
+  padding-inline-end: 9px;
+}
+.question-map .review-shortcut { margin-top: 16px; }
+.review-selection {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.review-selection p { margin: 0; overflow-wrap: anywhere; }
+.room-grid .room-participants li {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+}
+.room-grid .room-participants .participant-initial {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--button-bg);
+  color: var(--button-type);
+  font-weight: 700;
+}
+.participant-devices { grid-column: 2; }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { auth, uploadProfileFile } from '../api';
 import ProfileSessions from './ProfileSessions';
 import { navigate } from '../navigation';
+import { openResume } from '../openResume';
 import './account.css';
 
 export default function Account({ user, profile, onProfileChange, onUserChange, sessions, onSessionsChange, onPictureChange }) {
@@ -94,7 +95,7 @@ export default function Account({ user, profile, onProfileChange, onUserChange, 
         <p className="profile-description">Hosts can view your current résumé after you submit their interview.</p>
         <div className="profile-file-state"><span aria-hidden="true">PDF</span><div><strong>{profile?.hasResume ? 'Résumé attached' : 'No résumé attached'}</strong><small>{profile?.hasResume ? 'Your current file is available to hosts.' : 'Add a PDF whenever you are ready.'}</small></div></div>
         <div className="profile-actions"><label className="account-file-picker">{profile?.hasResume ? 'Replace PDF' : 'Upload PDF'}<input type="file" accept="application/pdf,.pdf" disabled={!!busy} onChange={event => upload(event, 'resume')}/></label>
-          {profile?.hasResume && <><a href={profile.resumeUrl} target="_blank" rel="noreferrer">View PDF ↗</a>
+          {profile?.hasResume && <><button className="text-button" disabled={!!busy} onClick={() => run('view-resume', () => openResume(user.id))}>View PDF ↗</button>
             <button className="text-button" disabled={!!busy} onClick={() => remove('resume')}>Remove</button></>}</div>
         <small>PDF · 5 MB maximum</small>
       </section>

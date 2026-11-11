@@ -32,6 +32,10 @@ export default function Dashboard({user}) {
   function switchMode(next){
     setMode(next);
     try { sessionStorage.setItem('vettly-workspace',next); } catch {}
+    const url = new URL(location.href);
+    if (next === 'candidate') url.searchParams.set('view', 'candidate');
+    else url.searchParams.delete('view');
+    history.replaceState(null, '', url);
   }
   const [filter,setFilter]=useState(''), [page,setPage]=useState(1);
   const [groups,setGroups]=useState(null), [list,setList]=useState(null);

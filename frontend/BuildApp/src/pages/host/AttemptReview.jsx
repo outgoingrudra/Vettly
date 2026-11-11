@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { request } from '../../api';
 import { Answers } from '../Scorecard';
 import { problem } from './host';
 import useReviewRequest from './useReviewRequest';
+import { openResume } from '../../openResume';
+
+const eventNames = {
+  COPY_ATTEMPT: 'Copy attempt', CUT_ATTEMPT: 'Cut attempt', PASTE_ATTEMPT: 'Paste attempt',
+  TAB_SWITCH: 'Tab switch', FULLSCREEN_EXIT: 'Fullscreen exit', FACE_MISSING: 'Face out of frame',
+  MULTIPLE_FACES: 'Multiple faces', LOOKING_AWAY: 'Looking away',
+  SUSPICIOUS_GESTURE: 'Hand movement', CAMERA_DISCONNECTED: 'Camera disconnected',
+};
+const reviewNames = { PENDING: 'Awaiting review', REVIEWED: 'Reviewed', CONFIRMED: 'Confirmed', DISMISSED: 'Dismissed' };
 
 function EventTimeline({ interviewId, attemptId }) {
   const [page, setPage] = useState(1);
@@ -30,14 +39,15 @@ function EventTimeline({ interviewId, attemptId }) {
     {response && <>
       {!response.events.length && <p>No events recorded.</p>}
       <ul className="review-list">{response.events.map(event =>
-        <li key={event.id}><div><strong>{event.type.toLowerCase().replaceAll('_', ' ')}</strong>
+        <li key={event.id}><div><strong>{eventNames[event.type] || event.type.toLowerCase().replaceAll('_', ' ')}</strong>
           <small>{new Date(event.occurredAt).toLocaleString()}{event.durationMs > 0 && ' · ' + Math.round(event.durationMs / 1000) + ' seconds'}</small>
-          {event.details && Object.keys(event.details).length > 0 && <pre className="event-details">{JSON.stringify(event.details, null, 2)}</pre>}
+          <small>{event.type === 'SUSPICIOUS_GESTURE' ? 'Recorded for review · no warning counted' : 'Counted as a warning'}</small>
+          {event.details && Object.keys(event.details).length > 0 && <details className="event-details"><summary>Detection details</summary><pre>{JSON.stringify(event.details, null, 2)}</pre></details>}
           <label>Review notes<textarea rows={2} maxLength={2000} value={notes[event.id] ?? event.reviewNotes ?? ''} onChange={e => setNotes(current => ({ ...current, [event.id]: e.target.value }))}/></label>
           <button disabled={saving} onClick={() => review(event, ['REVIEWED','CONFIRMED','DISMISSED'].includes(event.status) ? event.status : 'REVIEWED')}>Save notes</button>
         </div>
           <label>Review status<select disabled={saving} value={event.status} onChange={e => review(event, e.target.value)}>
-            {!['REVIEWED','CONFIRMED','DISMISSED'].includes(event.status) && <option value={event.status}>Awaiting review</option>}
+            {!['REVIEWED','CONFIRMED','DISMISSED'].includes(event.status) && <option value={event.status}>{reviewNames[event.status] || event.status}</option>}
             <option value="REVIEWED">Reviewed</option><option value="CONFIRMED">Confirmed</option><option value="DISMISSED">Dismissed</option>
           </select></label></li>)}</ul>
       {response.pagination.totalPages > 1 && <div className="pagination">
@@ -50,6 +60,11 @@ function EventTimeline({ interviewId, attemptId }) {
 }
 
 export default function AttemptReview({ interview, participant, onBack }) {
+  const panel = useRef(null);
+  useLayoutEffect(() => {
+    panel.current?.scrollIntoView({ block: 'start' });
+    panel.current?.focus({ preventScroll: true });
+  }, []);
   const attempt = participant.attempts[0];
   const submitted = ['SUBMITTED', 'COMPLETED'].includes(attempt.status);
   const path = '/interviews/attempts/' + attempt.id;
@@ -58,6 +73,8 @@ export default function AttemptReview({ interview, participant, onBack }) {
   const [feedback, setFeedback] = useState('');
   const [showProfile, setShowProfile] = useState(false);
   const profile = useReviewRequest(showProfile ? '/auth/profiles/' + participant.userId : null);
+  const [profileError, setProfileError] = useState('');
+  const [openingResume, setOpeningResume] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const published = result?.status === 'COMPLETED';
@@ -77,7 +94,13 @@ export default function AttemptReview({ interview, participant, onBack }) {
       setBusy(false);
     }
   }
-  return <section className="review-panel">
+  async function viewResume() {
+    setOpeningResume(true);setProfileError('');
+    try { await openResume(participant.userId); }
+    catch (failure) { setProfileError(problem(failure)); }
+    finally { setOpeningResume(false); }
+  }
+  return <section ref={panel} tabIndex={-1} aria-label="Candidate review" className="review-panel">
     <button onClick={onBack}>Back to candidates</button>
     <h2>{participant.user?.name || participant.email}</h2>
     {participant.user?.name && <p>{participant.email}</p>}
@@ -87,8 +110,9 @@ export default function AttemptReview({ interview, participant, onBack }) {
     {result && <section><Answers result={result}/>
       {participant.userId && <button aria-expanded={showProfile} onClick={() => setShowProfile(!showProfile)}>{showProfile ? 'Hide profile' : 'View candidate profile'}</button>}
       {showProfile && <div>{profile.error ? <p role="alert">{profile.error} <button onClick={profile.reload}>Retry</button></p> :
-        profile.response ? <p>{profile.response.data.name} · {profile.response.data.resumeUrl ?
-          <a href={profile.response.data.resumeUrl} target="_blank" rel="noreferrer">Open current résumé</a> : 'No résumé uploaded'}</p> : 'Loading profile…'}</div>}
+        profile.response ? <><p>{profile.response.data.name} · {profile.response.data.hasResume ?
+          <button disabled={openingResume} onClick={viewResume}>{openingResume?'Opening…':'Open current résumé'}</button> : 'No résumé uploaded'}</p>
+          {profileError && <p role="alert">{profileError}</p>}</> : 'Loading profile…'}</div>}
     </section>}
     <EventTimeline interviewId={interview.id} attemptId={attempt.id}/>
     {result && <section>
