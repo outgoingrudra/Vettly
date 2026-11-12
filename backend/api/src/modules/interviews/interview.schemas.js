@@ -43,3 +43,5 @@ export const createProctoringEventSchema = z.object({
   durationMs: z.number().int().min(0).max(3600000).optional(),
   details: z.record(z.string(), z.unknown()).optional(),
 });
+
+

@@ -23,6 +23,15 @@ import Sessions from "../modules/auth/pages/Sessions.jsx";
 import ProtectedRoute from "../components/layout/ProtectedRoute.jsx";
 import Logout from "../modules/auth/pages/Logout.jsx";
 
+import InterviewDashboard from "../modules/interview/pages/InterviewDashboard.jsx";
+import CreateInterview from "../modules/interview/pages/CreateInterview.jsx";
+import InterviewDetails from "../modules/interview/pages/InterviewDetails.jsx";
+import EditInterview from "../modules/interview/pages/EditInterview.jsx";
+import QuestionManagement from "../modules/interview/pages/QuestionManagement.jsx";
+import CandidateInterview from "../modules/interview/pages/CandidateInterview.jsx";
+import InterviewAttempt from "../modules/interview/pages/InterviewAttempt.jsx";
+
+
 function Dashboard() {
   const { user } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
@@ -336,12 +345,43 @@ export default function AppRouter() {
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/me" element={<Navigate to="/profile" replace />} />
-            <Route path="/sessions" element={<Sessions />} />
-            <Route path="/logout" element={<Logout />} />
-          </Route>
+  <Route path="/dashboard" element={<Dashboard />} />
+
+  {/* Interview Module */}
+  <Route
+    path="/interviews"
+    element={<InterviewDashboard />}
+  />
+
+  <Route
+    path="/interviews/create"
+    element={<CreateInterview />}
+  />
+
+  <Route path="/interviews/:id/edit" element={<EditInterview />} />
+  <Route
+  path="/interviews/:id/questions"
+  element={<QuestionManagement />}
+/>
+<Route
+  path="/interviews/:id/join"
+  element={<CandidateInterview />}
+/>
+<Route
+  path="/interviews/:id/attempt"
+  element={<InterviewAttempt />}
+/>
+  <Route path="/interviews/:id" element={<InterviewDetails />} />
+  
+
+  <Route path="/profile" element={<Profile />} />
+  <Route
+    path="/me"
+    element={<Navigate to="/profile" replace />}
+  />
+  <Route path="/sessions" element={<Sessions />} />
+  <Route path="/logout" element={<Logout />} />
+</Route>
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />
