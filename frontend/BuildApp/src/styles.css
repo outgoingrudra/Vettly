@@ -1,0 +1,94 @@
+/* Shared tokens give every screen the same palette and focus treatment. */
+:root {
+  color-scheme: light;
+  --page:#f5f2e9; --paper:#fffdf6; --ink:#28261f; --muted:#635f54; --rule:#c8c3b5;
+  --wine:#592338; --tint:#f1d8d4; --folder:#c8b38b; --focus:#357296; --error:#95352c;
+}
+:root[data-theme="Clay"] {
+  --page:#f6e9dc; --paper:#fff6eb; --ink:#382820; --muted:#72564a; --rule:#cab2a1;
+  --wine:#753b2b; --tint:#ffcfaa; --folder:#cb9c75; --focus:#277579;
+}
+:root[data-theme="Night"] {
+  color-scheme:dark;
+  --page:#080b0e; --paper:#141a1e; --ink:#f3f5f2; --muted:#aebbb7; --rule:#33413e;
+  --wine:#172223; --tint:#d1e9d7; --folder:#526965; --focus:#a6dfc2; --error:#ffab9c;
+}
+* { box-sizing:border-box }
+body { margin:0; background:var(--page); color:var(--ink); font:16px/1.5 "Segoe UI",Arial,sans-serif }
+a { color:inherit; text-underline-offset:4px }
+button,input,select { font:inherit; color:inherit }
+button,select,summary { cursor:pointer }
+button:disabled { opacity:.55; cursor:default }
+:focus-visible { outline:3px solid var(--focus); outline-offset:4px }
+.frame { max-width:1700px; min-height:100svh; margin:auto; display:flex; flex-direction:column }
+.frame>header,.frame>footer { padding:0 clamp(18px,5vw,78px); display:flex; align-items:center; gap:30px }
+.frame>header { min-height:76px; border-bottom:1px solid var(--rule) }
+.brand { display:inline-flex; align-items:center; gap:9px; text-decoration:none; font-size:30px; font-weight:750; letter-spacing:-2px }
+.logomark { width:27px; height:28px; background:currentColor; clip-path:polygon(0 0,34% 0,55% 57%,77% 0,100% 0,64% 100%,38% 100%) }
+header nav,.tools { display:flex; align-items:center; gap:24px }
+header nav { margin-left:26px } header nav a,footer a { font-size:14px; text-decoration:none } header nav a:hover,footer a:hover { text-decoration:underline }
+.tools { margin-left:auto; gap:12px }.tools select { background:var(--page); border:1px solid var(--rule); border-radius:4px; padding:6px }
+.ink-button,.action,.paper button { background:var(--ink); color:var(--page); border:0; border-radius:4px; display:inline-flex; align-items:center; justify-content:space-between; gap:24px; padding:11px 17px; text-decoration:none; font-size:15px; font-weight:650 }
+.skip { position:fixed; left:10px; top:-60px; z-index:10; background:var(--paper); padding:8px }.skip:focus { top:8px }
+h1,h2,h3,p,dl,dd { margin:0 }
+.cover { background:var(--wine); color:#fff7ec; display:grid; grid-template-columns:.96fr 1.04fr; align-items:center; gap:5vw; padding:clamp(48px,6vw,104px) clamp(20px,7vw,115px); min-height:570px }
+.cover h1 { font:normal clamp(72px,8.5vw,142px)/.89 Georgia,serif; letter-spacing:-.075em }
+.cover em { color:var(--tint); font-weight:400 }
+.cover-copy p { max-width:36ch; margin:24px 0 30px; font-size:clamp(16px,1.25vw,21px); color:#f4e6dd }
+.cover .action { color:#37292e; background:var(--tint) }
+.desk { min-width:0; padding:30px 0 0; scroll-margin-top:28px }
+.folder { width:min(100%,450px); position:relative; margin:auto; isolation:isolate; padding:16px; border-radius:0 6px 6px 6px; background:var(--folder); box-shadow:0 24px 30px -20px #180e17aa }
+.folder:before { content:""; position:absolute; inset:6px 16px 20px 20px; background:#ede5d6; transform:rotate(3deg); z-index:-1; border:1px solid #baae96 }
+.folder-tab { position:absolute; bottom:100%; left:0; background:var(--folder); color:#241e18; padding:5px 24px 4px 14px; clip-path:polygon(0 0,88% 0,100% 100%,0 100%); font:600 11px/1.6 Consolas,monospace }
+.paper { background:var(--paper); color:var(--ink); padding:clamp(18px,2vw,34px); min-height:300px; border:1px solid var(--rule) }
+.paper-meta,.detail,.stage-nav { display:flex; align-items:center; justify-content:space-between; gap:8px }
+.paper-meta { padding-bottom:12px; border-bottom:1px solid var(--rule); color:var(--muted); font:12px Consolas,monospace }
+.paper h2 { font:normal clamp(25px,2.9vw,44px)/1.04 Georgia,serif; letter-spacing:-.05em; margin:18px 0 }
+.detail { font-size:14px; margin:6px 0 }.detail span,.paper p { color:var(--muted) }.paper p { margin:12px 0; font-size:13px }
+.paper button { margin-top:10px; font-size:13px; padding:8px 12px }.paper fieldset { border:0; padding:0; margin:0 }.paper label { display:block; padding:4px 0 }.paper input { margin:0 8px 0 0 }
+.score { font:48px Georgia,serif }.score small { font:15px system-ui }
+.stage-nav { justify-content:center; margin-top:24px; flex-wrap:wrap }.stage-nav button { background:none; color:#e9d5d7; border:0; border-bottom:2px solid transparent; padding:8px 9px; font-size:13px }.stage-nav button[aria-pressed=true] { border-color:var(--tint); color:white }
+.questions { padding:clamp(40px,6vw,90px) 7%; display:grid; grid-template-columns:1fr 1fr; gap:4vw }
+.questions h2,.account-panel h1 { font:normal clamp(38px,4.2vw,70px)/1.05 Georgia,serif; letter-spacing:-.06em }
+details { border-top:1px solid var(--rule) } details:last-child { border-bottom:1px solid var(--rule) }
+summary { padding:17px 0; display:flex; justify-content:space-between; gap:12px; font-weight:600 }summary::-webkit-details-marker { display:none } details[open] summary span { transform:rotate(45deg) }details p { padding:0 24px 18px 0;color:var(--muted) }
+.frame>footer { min-height:44px; margin-top:auto; border-top:1px solid var(--rule); color:var(--muted); font-size:13px }.frame>footer .brand { font-size:19px }.frame>footer .logomark { width:17px;height:18px }.frame>footer>a:last-child { margin-left:auto }
+.access { display:grid; grid-template-columns:clamp(115px,17vw,240px) minmax(0,570px); justify-content:center; align-content:center; flex:1; padding:40px 20px }
+.spine { background:var(--wine); color:var(--tint); padding:24px; position:relative; overflow:hidden; min-height:465px }.spine strong { position:absolute; bottom:24px;left:18px;font:italic clamp(40px,6vw,90px)/1 Georgia,serif;letter-spacing:-.09em }
+.spine-fold { position:absolute;inset:-50% 12% 25% -95%; transform:rotate(-22deg);border:1px solid #fff5; box-shadow:8px 0 0 #ffffff18,16px 0 0 #ffffff14,24px 0 0 #ffffff10 }
+.account-panel { min-width:0; background:var(--paper); border:1px solid var(--rule);padding:clamp(24px,4vw,58px); align-content:center }
+.account-panel h1 { font-size:clamp(36px,3.6vw,54px);overflow-wrap:anywhere }.intro { margin:12px 0 24px; color:var(--muted) }
+.tabs,.label-line,.identity { display:flex;gap:20px;align-items:center }.tabs { margin-bottom:28px;border-bottom:1px solid var(--rule) }.tabs a { text-decoration:none;padding:6px 0;border-bottom:2px solid transparent }.tabs a[aria-current] { border-color:currentColor;font-weight:650 }
+form { display:grid;gap:17px }form label { font-size:14px;font-weight:600 }.label-line { justify-content:space-between }.label-line a,.back,.minor { font-size:13px }
+form input { display:block;width:100%;min-height:45px;margin-top:6px;border:1px solid var(--rule);border-radius:4px;padding:10px 12px;background:var(--page);font-weight:400 }
+.password { position:relative }.password input { padding-right:45px }.password button { position:absolute;inset:1px 1px 1px auto;width:43px;background:none;border:0;display:grid;place-items:center }
+.back { display:inline-block;margin-bottom:22px }.minor,.text-button { display:block;margin-top:18px }.text-button { background:none;border:0;text-decoration:underline;padding:4px 0 }
+.error { color:var(--error);border-inline-start:2px solid;padding-left:10px }.success-icon,.identity>span { display:grid;place-items:center;width:45px;height:45px;background:var(--tint);color:#392332;border-radius:50%;font-size:22px }.success-icon { margin-bottom:18px }.identity { gap:12px }.identity p,.account-panel dt { color:var(--muted);font-size:13px }.account-panel dl { margin:22px 0;border-block:1px solid var(--rule);padding:14px 0 }.account-panel dd { margin:2px 0 10px;overflow-wrap:anywhere }
+.wait { font-weight:600 }.skeleton { margin-top:20px }.skeleton i { display:block;background:var(--rule);height:12px;width:80%;margin:14px 0;border-radius:3px }.skeleton i:nth-child(2){width:57%}.skeleton i:last-child{width:68%}
+@media(prefers-reduced-motion:no-preference){.skeleton{animation:pulse 1.3s ease-in-out infinite alternate}@keyframes pulse{to{opacity:.45}}}
+@media(max-width:720px){.frame>header,.frame>footer{gap:12px}.frame>header{min-height:64px}header nav{display:none}.tools{gap:7px}.cover,.questions{grid-template-columns:1fr}.cover{gap:38px;padding:40px 22px 26px}.cover h1{font-size:clamp(62px,14vw,90px)}.cover-copy p{margin:16px 0 20px}.desk{width:100%}.questions{gap:22px;padding:36px 22px}.access{grid-template-columns:minmax(0,520px);padding:24px 16px}.spine{display:none}.account-panel{padding:26px 20px}.frame>footer>span{display:none}.paper{min-height:275px}}
+
+/* The access pages use the same stock, ink, and invitation print as the cover. */
+.brand-fold { width:38px; height:38px; object-fit:contain }
+footer .brand-fold { width:25px; height:25px }
+.frame { background:var(--home-bg); color:var(--home-ink) }
+.frame > main.access { width:min(1320px,100%); margin:auto; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:clamp(35px,7vw,105px); padding:clamp(35px,5vw,80px) clamp(22px,5vw,76px) }
+.access .account-panel { width:100%; max-width:450px; justify-self:center; border:0; padding:0; background:transparent }
+.access .account-panel h1 { font-size:clamp(43px,4.3vw,70px); font-weight:400 }
+.access .intro,.access .account-panel dt { color:var(--home-muted) }
+.access .tabs { width:fit-content; margin-bottom:32px; gap:24px; font-size:14px }
+.access input { background:var(--paper); border-color:var(--home-rule); border-radius:7px; min-height:48px }
+.access .action { background:var(--button-bg); color:var(--button-type); border-radius:6px; min-height:48px }
+.access .success-icon,.access .identity>span { background:var(--print); color:var(--print-type) }
+.access .account-panel dl { margin:28px 0; padding:22px 0; border-color:var(--home-rule) }
+.access .account-panel dd { font-weight:550 }
+.access-art { width:100%; min-width:0 }
+.access-art .invitation-print { min-height:440px }
+.ribbon-stage { position:relative; min-width:0 }
+.ribbon-stage canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none }
+.ribbon-stage[data-ready=true] .pleated-band { visibility:hidden }
+.ribbon-stage:not([data-ready=true]) canvas { visibility:hidden }
+@media(max-width:740px){
+  .frame > main.access { grid-template-columns:1fr; min-height:65vh; padding:36px 22px }
+  .access-art { display:none }
+}

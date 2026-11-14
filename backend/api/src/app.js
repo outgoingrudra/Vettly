@@ -5,7 +5,8 @@ import cors from "cors";
 import helmet from "helmet";
 import authRoutes from "./modules/auth/auth.routes.js";
 import interviewRoutes from "./modules/interviews/interview.routes.js";
-import path from "node:path";
+
+import streamRoutes from "./modules/stream/stream.routes.js";
 
 const app = express();
 
@@ -21,11 +22,12 @@ app.use(
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   })
 );
 
+app.use("/api/v1/interviews/:id/questions", express.json({ limit: "2mb" }));
 app.use(express.json({ limit: "16kb" }));
 app.use(cookieParser());
 
@@ -39,8 +41,11 @@ app.get("/api/v1/health", (req, res) => {
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/interviews", interviewRoutes);
-app.use(
-  "/uploads",
-  express.static(path.resolve(process.cwd(), "uploads"))
-);
+app.use("/api/v1/stream", streamRoutes);
+app.use((error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  const status = error.httpStatus || error.status || 500;
+  const message = error.httpStatus ? error.message : "Unable to process the request.";
+  res.status(status).json({ success: false, message });
+});
 export default app;

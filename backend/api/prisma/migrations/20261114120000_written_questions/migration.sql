@@ -1,0 +1,3 @@
+ALTER TABLE "InterviewQuestion"
+  ADD COLUMN "kind" TEXT NOT NULL DEFAULT 'MCQ',
+  ADD COLUMN "maxWords" INTEGER;

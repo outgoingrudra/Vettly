@@ -12,6 +12,9 @@ model User {
   email           String    @unique
   passwordHash    String
   profilePicture  String?
+  pictureFileId String?
+  resumePath String?
+  resumeFileId String?
   emailVerifiedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -87,6 +90,9 @@ model Interview {
   format      InterviewFormat @default(LIVE)
   status      InterviewStatus @default(DRAFT)
 
+  questions InterviewQuestion[]
+  warningLimit Int @default(3)
+
   // Scheduling
   scheduledAt     DateTime?
   durationMinutes Int             @default(30)
@@ -145,6 +151,8 @@ model InterviewParticipant {
   acceptedAt          DateTime?
   startedAt           DateTime?
   completedAt         DateTime?
+  streamSyncedAt  DateTime?
+  streamSyncError String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -177,11 +185,17 @@ model InterviewAttempt {
   submittedAt DateTime?
   completedAt DateTime?
 
+  deadline DateTime?
+  warningCount Int @default(0)
+  terminationReason String?
+  feedback String?
+
   // Interview session configuration and results
   streamCallId        String?
   streamChatChannelId String?
   score               Float?
   evaluation          Json?
+  aiStatus            String @default("NOT_REQUIRED")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -206,6 +220,7 @@ enum ProctoringEventType {
   MULTIPLE_FACES
   SUSPICIOUS_GESTURE
   CAMERA_DISCONNECTED
+  LOOKING_AWAY
 }
 
 enum ProctoringReviewStatus {
@@ -240,4 +255,18 @@ model ProctoringEvent {
   @@index([attemptId, occurredAt])
   @@index([attemptId, type])
   @@index([status, occurredAt])
+}
+
+model InterviewQuestion {
+  id String @id @default(cuid())
+  interviewId String
+  position Int
+  prompt String
+  options String[]
+  correctOption Int
+  marks Int @default(1)
+  kind String @default("MCQ")
+  maxWords Int?
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  @@unique([interviewId, position])
 }

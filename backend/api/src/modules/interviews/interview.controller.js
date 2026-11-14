@@ -1,10 +1,11 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 
-import { z } from "zod";
+
 
 import prisma from "../../lib/prisma.js";
-import { createInterviewSchema } from "./interview.schemas.js";
+import { createInterviewSchema , acceptInvitationSchema} from "./interview.schemas.js";
 
+import { addParticipantToStream } from "../stream/stream.controller.js";
 export async function createInterview(req, res) {
   const parsed = createInterviewSchema.safeParse(req.body);
 
@@ -20,7 +21,7 @@ export async function createInterview(req, res) {
   }
 
   try {
-    // Adjust this if your requireAuth middleware uses a different property.
+    if (!req.user?.emailVerifiedAt) return res.status(403).json({ success: false, message: "Verify your email before creating an interview." });
     const creatorId = req.user?.id;
 
     if (!creatorId) {
@@ -30,28 +31,11 @@ export async function createInterview(req, res) {
       });
     }
 
-    const {
-      title,
-      description,
-      instructions,
-      format,
-      scheduledAt,
-      durationMinutes,
-      timezone,
-      maxParticipants,
-    } = parsed.data;
-
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     const interview = await prisma.interview.create({
       data: {
+        ...parsed.data,
         creatorId,
-        title,
-        description,
-        instructions,
-        format,
-        scheduledAt,
-        durationMinutes,
-        timezone,
-        maxParticipants,
         status: "DRAFT",
       },
     });
@@ -59,7 +43,7 @@ export async function createInterview(req, res) {
     return res.status(201).json({
       success: true,
       message: "Interview created successfully.",
-      data: { interview },
+      data: { interview, joinUrl: new URL("/interviews/" + interview.id + "/join", frontendUrl).href },
     });
   } catch (error) {
     console.error("Create interview error:", error);
@@ -172,6 +156,7 @@ export async function getInterviewById(req, res) {
         id,
         creatorId,
       },
+      include: { questions: { orderBy: { position: "asc" } } },
     });
 
     if (!interview) {
@@ -248,9 +233,11 @@ export async function updateInterview(req, res) {
       });
     }
 
+    // Zod defaults belong to creation. A PATCH changes only supplied fields.
+    const changes = Object.fromEntries(Object.entries(parsed.data).filter(([key]) => Object.hasOwn(req.body, key)));
     const interview = await prisma.interview.update({
-      where: { id },
-      data: parsed.data,
+      where: { id, creatorId, status: "DRAFT" },
+      data: changes,
     });
 
     return res.status(200).json({
@@ -301,14 +288,16 @@ export async function publishInterview(req, res) {
       });
     }
 
-    const publishedInterview = await prisma.interview.update({
-      where: { id },
+    const started = await prisma.interview.updateMany({
+      where: { id, creatorId, status: "DRAFT", OR: [{ format: "LIVE" }, { questions: { some: {} } }] },
       data: {
         status: "PUBLISHED",
         publishedAt: new Date(),
       },
     });
 
+    if (!started.count) return res.status(409).json({ success: false, message: "Add questions to an async draft before starting." });
+    const publishedInterview = await prisma.interview.findUnique({ where: { id } });
     return res.status(200).json({
       success: true,
       message: "Interview published successfully.",
@@ -463,144 +452,6 @@ export async function deleteInterview(req, res) {
 
 
 
-const inviteParticipantSchema = z.object({
-  email: z.string().trim().email().max(254),
-});
-
-export async function inviteParticipant(req, res) {
-  const parsed = inviteParticipantSchema.safeParse(req.body);
-
-  if (!parsed.success) {
-    return res.status(400).json({
-      success: false,
-      message: "A valid email address is required.",
-    });
-  }
-
-  try {
-    const creatorId = req.user?.id;
-    const { id: interviewId } = req.params;
-    const email = parsed.data.email.toLowerCase();
-
-    if (!creatorId) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required.",
-      });
-    }
-
-    const interview = await prisma.interview.findFirst({
-      where: {
-        id: interviewId,
-        creatorId,
-      },
-      select: {
-        id: true,
-        status: true,
-        maxParticipants: true,
-      },
-    });
-
-    if (!interview) {
-      return res.status(404).json({
-        success: false,
-        message: "Interview not found.",
-      });
-    }
-
-    if (interview.status !== "PUBLISHED") {
-      return res.status(409).json({
-        success: false,
-        message: "Only published interviews can accept invitations.",
-      });
-    }
-
-    const existingParticipant =
-      await prisma.interviewParticipant.findUnique({
-        where: {
-          interviewId_email: {
-            interviewId,
-            email,
-          },
-        },
-        select: { id: true },
-      });
-
-    if (existingParticipant) {
-      return res.status(409).json({
-        success: false,
-        message: "This email has already been invited.",
-      });
-    }
-
-    if (interview.maxParticipants !== null) {
-      const participantCount =
-        await prisma.interviewParticipant.count({
-          where: { interviewId },
-        });
-
-      if (participantCount >= interview.maxParticipants) {
-        return res.status(409).json({
-          success: false,
-          message: "Interview participant limit reached.",
-        });
-      }
-    }
-
-    const rawToken = randomBytes(32).toString("base64url");
-    const invitationTokenHash = createHash("sha256")
-      .update(rawToken)
-      .digest("hex");
-
-    const invitationExpiresAt = new Date(
-      Date.now() + 7 * 24 * 60 * 60 * 1000
-    );
-
-    const participant = await prisma.interviewParticipant.create({
-      data: {
-        interviewId,
-        email,
-        status: "INVITED",
-        invitationTokenHash,
-        invitationExpiresAt,
-      },
-      select: {
-        id: true,
-        interviewId: true,
-        email: true,
-        status: true,
-        invitedAt: true,
-        invitationExpiresAt: true,
-      },
-    });
-
-    // Email delivery will be connected when the worker supports
-    // participant_invitation jobs. Never return the raw token here.
-
-    return res.status(201).json({
-      success: true,
-      message:
-        "Participant invitation created. Email delivery is not enabled yet.",
-      data: { participant },
-    });
-  } catch (error) {
-    if (error.code === "P2002") {
-      return res.status(409).json({
-        success: false,
-        message: "This email has already been invited.",
-      });
-    }
-
-    console.error("Invite participant error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Unable to create participant invitation.",
-    });
-  }
-}
-
-
 export async function listInterviewParticipants(req, res) {
   const page = Number(req.query.page ?? 1);
   const limit = Number(req.query.limit ?? 10);
@@ -658,9 +509,15 @@ export async function listInterviewParticipants(req, res) {
       });
     }
 
+    const search = req.query.search ?? "";
+    if (typeof search !== "string" || search.length > 254) {
+      return res.status(400).json({ success: false, message: "Invalid candidate search." });
+    }
+    const contains = { contains: search.trim(), mode: "insensitive" };
     const where = {
       interviewId,
       ...(status ? { status } : {}),
+      ...(search.trim() ? { OR: [{ email: contains }, { user: { name: contains } }] } : {}),
     };
 
     const [participants, total] = await Promise.all([
@@ -671,11 +528,15 @@ export async function listInterviewParticipants(req, res) {
           email: true,
           userId: true,
           status: true,
+          user: { select: { name: true } },
+          attempts: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, deadline: true, submittedAt: true, score: true, aiStatus: true, warningCount: true, terminationReason: true } },
           invitedAt: true,
           invitationExpiresAt: true,
           acceptedAt: true,
           startedAt: true,
           completedAt: true,
+          streamSyncedAt: true,
+          streamSyncError: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -689,7 +550,11 @@ export async function listInterviewParticipants(req, res) {
     return res.status(200).json({
       success: true,
       data: {
-        participants,
+        participants: participants.map(p => {
+          const attempt = p.attempts[0];
+          const expired = attempt?.status === "IN_PROGRESS" && attempt.deadline && attempt.deadline < new Date();
+          return { ...p, outcome: expired ? "DID_NOT_SUBMIT" : attempt?.status ?? p.status };
+        }),
         pagination: {
           page,
           limit,
@@ -707,3 +572,463 @@ export async function listInterviewParticipants(req, res) {
     });
   }
 }
+
+
+
+
+export async function acceptInvitation(req, res) {
+  const parsed = acceptInvitationSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "A valid invitation token is required.",
+    });
+  }
+
+  if (!req.user?.id) {
+    return res.status(401).json({
+      success: false,
+      message: "You must be logged in to accept this invitation.",
+    });
+  }
+
+  const tokenHash = createHash("sha256")
+    .update(parsed.data.token)
+    .digest("hex");
+
+  const participant = await prisma.interviewParticipant.findUnique({
+    where: { invitationTokenHash: tokenHash },
+    select: {
+      id: true,
+      interviewId: true,
+      email: true,
+      status: true,
+      invitationExpiresAt: true,
+    },
+  });
+
+  if (!participant) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid invitation token.",
+    });
+  }
+
+  if (
+    !participant.invitationExpiresAt ||
+    participant.invitationExpiresAt <= new Date()
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "This invitation has expired.",
+    });
+  }
+
+  if (participant.status !== "INVITED") {
+    return res.status(409).json({
+      success: false,
+      message: "This invitation can no longer be accepted.",
+    });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: "Authenticated user not found.",
+    });
+  }
+
+  if (
+    user.email.trim().toLowerCase() !==
+    participant.email.trim().toLowerCase()
+  ) {
+    return res.status(403).json({
+      success: false,
+      message: "This invitation was sent to a different email address.",
+    });
+  }
+
+  const acceptedAt = new Date();
+
+  const updated = await prisma.interviewParticipant.updateMany({
+    where: {
+      id: participant.id,
+      invitationTokenHash: tokenHash,
+      status: "INVITED",
+      invitationExpiresAt: { gt: acceptedAt },
+    },
+    data: {
+      userId: user.id,
+      status: "ACCEPTED",
+      acceptedAt,
+      invitationTokenHash: null,
+    },
+  });
+
+  if (updated.count !== 1) {
+    return res.status(409).json({
+      success: false,
+      message: "The invitation has expired or has already been used.",
+    });
+  }
+
+  try {
+    const interview = await prisma.interview.findUnique({
+      where: { id: participant.interviewId },
+    });
+
+    if (!interview?.streamCallId || !interview?.streamChatChannelId) {
+      throw new Error("Stream call or chat has not been set up yet.");
+    }
+
+    await addParticipantToStream(interview, user);
+
+    await prisma.interviewParticipant.update({
+      where: { id: participant.id },
+      data: {
+        streamSyncedAt: new Date(),
+        streamSyncError: null,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Invitation accepted successfully.",
+      participant: {
+        id: participant.id,
+        interviewId: participant.interviewId,
+        email: participant.email,
+        status: "ACCEPTED",
+        streamSynced: true,
+      },
+    });
+  } catch (error) {
+    console.error("Stream participant sync failed:", error);
+
+    await prisma.interviewParticipant.update({
+      where: { id: participant.id },
+      data: {
+        streamSyncError: String(error.message || error).slice(0, 1000),
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Invitation accepted. Stream access synchronization is pending.",
+      participant: {
+        id: participant.id,
+        interviewId: participant.interviewId,
+        email: participant.email,
+        status: "ACCEPTED",
+        streamSynced: false,
+      },
+    });
+  }
+}
+
+export async function retryStreamSync(req, res) {
+  const { id: interviewId, participantId } = req.params;
+
+  if (!req.user?.id) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required.",
+    });
+  }
+
+  const interview = await prisma.interview.findFirst({
+    where: {
+      id: interviewId,
+      creatorId: req.user.id,
+    },
+  });
+
+  if (!interview) {
+    return res.status(404).json({
+      success: false,
+      message: "Interview not found.",
+    });
+  }
+
+  if (!interview.streamCallId || !interview.streamChatChannelId) {
+    return res.status(409).json({
+      success: false,
+      message: "Stream has not been set up for this interview.",
+    });
+  }
+
+  const participant = await prisma.interviewParticipant.findFirst({
+    where: {
+      id: participantId,
+      interviewId,
+      status: {
+        in: ["ACCEPTED", "IN_PROGRESS"],
+      },
+      userId: {
+        not: null,
+      },
+    },
+  });
+
+  if (!participant) {
+    return res.status(404).json({
+      success: false,
+      message: "Accepted participant not found.",
+    });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: participant.userId,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Participant account not found.",
+    });
+  }
+
+  try {
+    await addParticipantToStream(interview, user);
+
+    await prisma.interviewParticipant.update({
+      where: { id: participant.id },
+      data: {
+        streamSyncedAt: new Date(),
+        streamSyncError: null,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Participant successfully synchronized with Stream.",
+      streamSynced: true,
+    });
+  } catch (error) {
+    console.error("Stream retry failed:", error);
+
+    await prisma.interviewParticipant.update({
+      where: { id: participant.id },
+      data: {
+        streamSyncError: String(error.message || error).slice(0, 1000),
+      },
+    });
+
+    return res.status(502).json({
+      success: false,
+      message: "Stream synchronization failed. Please try again.",
+      streamSynced: false,
+    });
+  }
+}
+
+export async function listProctoringEvents(req, res) {
+  const { id: interviewId } = req.params;
+  const { attemptId } = req.query;
+
+  if (!req.user?.id) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required.",
+    });
+  }
+
+  const page = Math.max(
+    1,
+    Number.parseInt(req.query.page, 10) || 1
+  );
+
+  const limit = Math.min(
+    100,
+    Math.max(1, Number.parseInt(req.query.limit, 10) || 20)
+  );
+
+  // Only the interview creator can view proctoring events
+  const interview = await prisma.interview.findFirst({
+    where: {
+      id: interviewId,
+      creatorId: req.user.id,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!interview) {
+    return res.status(404).json({
+      success: false,
+      message: "Interview not found.",
+    });
+  }
+
+  // Validate optional attempt ID
+  if (attemptId) {
+    const attempt = await prisma.interviewAttempt.findFirst({
+      where: {
+        id: attemptId,
+        interviewId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!attempt) {
+      return res.status(404).json({
+        success: false,
+        message: "Interview attempt not found.",
+      });
+    }
+  }
+
+  const where = {
+    attempt: {
+      interviewId,
+      ...(attemptId ? { id: attemptId } : {}),
+    },
+  };
+
+  const [events, total] = await Promise.all([
+    prisma.proctoringEvent.findMany({
+      where,
+      orderBy: {
+        occurredAt: "desc",
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        attemptId: true,
+        type: true,
+        status: true,
+        occurredAt: true,
+        durationMs: true,
+        details: true,
+        reviewedAt: true,
+        reviewedById: true,
+        reviewNotes: true,
+      },
+    }),
+
+    prisma.proctoringEvent.count({ where }),
+  ]);
+
+  return res.status(200).json({
+    success: true,
+    events,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+}
+export async function reviewProctoringEvent(req, res) {
+  const { id: interviewId, eventId } = req.params;
+  const { status, reviewNotes } = req.body;
+
+  if (!req.user?.id) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required.",
+    });
+  }
+
+  const allowedStatuses = [
+    "REVIEWED",
+    "DISMISSED",
+    "CONFIRMED",
+  ];
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: "Status must be REVIEWED, DISMISSED, or CONFIRMED.",
+    });
+  }
+
+  if (
+    reviewNotes !== undefined &&
+    (
+      typeof reviewNotes !== "string" ||
+      reviewNotes.length > 2000
+    )
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Review notes must be a string of at most 2000 characters.",
+    });
+  }
+
+  // Verify event belongs to an interview created by this user
+  const event = await prisma.proctoringEvent.findFirst({
+    where: {
+      id: eventId,
+      attempt: {
+        interviewId,
+        interview: {
+          creatorId: req.user.id,
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!event) {
+    return res.status(404).json({
+      success: false,
+      message: "Proctoring event not found.",
+    });
+  }
+
+  const updated = await prisma.proctoringEvent.updateMany({
+    where: {
+      id: eventId,
+      attempt: {
+        interviewId,
+        interview: {
+          creatorId: req.user.id,
+        },
+      },
+    },
+    data: {
+      status,
+      reviewNotes: reviewNotes?.trim() || null,
+      reviewedAt: new Date(),
+      reviewedById: req.user.id,
+    },
+  });
+
+  if (updated.count !== 1) {
+    return res.status(409).json({
+      success: false,
+      message: "Unable to update the proctoring event.",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Proctoring event review saved.",
+  });
+}
+
+

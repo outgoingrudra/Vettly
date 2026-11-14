@@ -5,7 +5,7 @@
 
 
 - npx prisma generate
-- cloude anqp
+- cloude amqp
 
 2-3 topics
 

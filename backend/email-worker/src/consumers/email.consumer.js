@@ -1,7 +1,10 @@
+import { sendEmail } from "../services/email.service.js";
 
 import { getRabbitChannel, queueNames } from "../config/rabbitmq.js";
 import { emailJobSchema } from "./email.schema.js";
 import { sendWelcomeEmail } from "../services/welcome-email.service.js";
+import { renderInterviewInvitationEmail } from "../templates/interview-invitation.template.js";
+import { renderResultPublishedEmail } from "../templates/result-published.template.js";
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -11,6 +14,25 @@ const MAX_RETRIES = 3;
 
 async function processEmailJob(job) {
   switch (job.type) {
+    case "interview_invitation":
+    case "result_published": {
+      const invitation = job.type === "interview_invitation";
+      const subject = invitation ? "You are invited to an interview" : "Your interview result is available";
+      const instruction = invitation ? "Sign in to join your interview." : "Sign in to view your published scorecard.";
+      const html = invitation
+        ? renderInterviewInvitationEmail(job.data)
+        : renderResultPublishedEmail(job.data);
+      const context = [
+        job.data.interviewTitle && `Interview: ${job.data.interviewTitle}`,
+        job.data.hostName && `Host: ${job.data.hostName}`,
+      ].filter(Boolean);
+      return sendEmail({
+        to: job.to,
+        subject,
+        html,
+        text: [...context, instruction, job.data.url].join("\n"),
+      });
+    }
     case "welcome":
       return sendWelcomeEmail({
         to: job.to,
