@@ -23,12 +23,18 @@ export default function CandidateInterview({id,view}){
     const timer=setInterval(()=>setNow(Date.now()),1000);
     return ()=>clearInterval(timer);
   },[]);
-  const finish=useCallback((message,key)=>{
+  const finish=useCallback((message,key,keepMeeting=false)=>{
     resource.current?.close();resource.current=null;
     try{sessionStorage.removeItem(key)}catch{}
-    setReceipt(message);setSession(null);
+    if (keepMeeting) {
+      setSession(current => ({ ...current, submitted: true }));
+      navigate('/interviews/'+id+'/video', {replace:true});
+    } else {
+      setReceipt(message);
+      setSession(null);
+    }
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
-  },[]);
+  },[id]);
   useEffect(()=>{if(video.current && ready)video.current.srcObject=resource.current?.stream},[ready]);
   async function checkCamera(){
     setBusy(true);setError('');
@@ -79,6 +85,10 @@ export default function CandidateInterview({id,view}){
   if(!preview)return error?<section><a className="page-back" href="/host?view=candidate">← Back to my interviews</a><p role="alert">{error} <button disabled={checking} onClick={refreshStatus}>{checking?'Checking…':'Retry'}</button></p></section>:<p role="status">Loading invitation…</p>;
   const {interview,attempt}=preview;
   if(session)return <Assessment view={view} interview={interview} session={session} camera={resource.current} onFinish={finish}/>;
+  const submitted = ['SUBMITTED','COMPLETED'].includes(attempt?.status);
+  if (submitted && interview.streamCallId && view === 'video') {
+    return <Assessment view={view} interview={interview} session={{ attempt, questions: [], offset:preview.offset, submitted:true }} onFinish={finish}/>;
+  }
   const remaining=attempt?.deadline ? Math.max(0,Math.ceil((Date.parse(attempt.deadline)-now-preview.offset)/1000)) : 0;
   const resumed=attempt?.status==='IN_PROGRESS' && remaining>0;
   const closed=attempt && attempt.status!=='NOT_STARTED' && !resumed;
@@ -89,6 +99,7 @@ export default function CandidateInterview({id,view}){
     {interview.instructions && <p className="instructions">{interview.instructions}</p>}
     {closed?<div role="status" className="attempt-note">
       <p>{attempt.status==='SUBMITTED'?'Submitted · awaiting publication':attempt.status==='COMPLETED'?'Result published':attempt.terminationReason||'Attempt closed. Did not submit.'}</p>
+      {submitted && interview.streamCallId && <a href={'/interviews/'+id+'/video'}>Return to video room</a>}
       {attempt.status==='COMPLETED' && <a href={'/results/'+encodeURIComponent(attempt.id)}>View scorecard</a>}
       {attempt.status==='SUBMITTED' && <button disabled={checking} onClick={refreshStatus}>{checking?'Checking…':'Check result status'}</button>}
       <a href="/host?view=candidate">My interviews</a>

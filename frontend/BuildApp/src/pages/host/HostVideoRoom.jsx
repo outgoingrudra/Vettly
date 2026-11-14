@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { request } from '../../api';
 import { hostPath, problem } from './host';
 import RoomChatDrawer from '../candidate/RoomChatDrawer';
@@ -12,6 +12,7 @@ export default function HostVideoRoom({ id }) {
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
   const [showCandidates, setShowCandidates] = useState(false);
+  const detailsDialog = useRef(null);
   const [closing, setClosing] = useState(false);
   const [closeError, setCloseError] = useState('');
 
@@ -52,7 +53,22 @@ export default function HostVideoRoom({ id }) {
     }
   }
 
+  async function endMeeting() {
+    if (!window.confirm('End the video meeting for everyone and close entry? Active assessments can still be submitted.')) return;
+    setClosing(true);
+    setCloseError('');
+    try {
+      await request('/stream/' + encodeURIComponent(id) + '/end', {});
+      setInterview(current => ({ ...current, status: 'ARCHIVED', streamCallId: null }));
+    } catch (failure) {
+      setCloseError(problem(failure));
+    } finally {
+      setClosing(false);
+    }
+  }
+
   return <main id="content" className="workspace live-stage">
+    <div className="meeting-info">
     <a className="page-back" href={hostPath(id)}>← Interview overview</a>
     {error ? <p role="alert">{error} <button onClick={() => setRetry(value => value + 1)}>Retry</button></p> :
       !interview ? <p role="status">Opening interview room…</p> :
@@ -60,33 +76,44 @@ export default function HostVideoRoom({ id }) {
         <p role="status">This interview has no video room. <a href={hostPath(id)}>Return to the interview</a></p> : <>
         <div className="room-heading">
           <div>
-            <p className="room-role">Host video room</p>
+
             <h1>{interview.title}</h1>
-            <p className="metadata">{interview.durationMinutes} minutes · {interview.questions?.length || 0} {interview.questions?.length === 1 ? 'question' : 'questions'}</p>
+
           </div>
           <div className="live-stage-entry">
+            <button type="button" aria-haspopup="dialog" onClick={() => {
+              setShowCandidates(true);
+              detailsDialog.current.showModal();
+            }}>Room details</button>
             <RoomChatDrawer interviewId={id}/>
             <span className="live-stage-status">{interview.status === 'PUBLISHED' ? 'Open for candidates' : 'Entry closed'}</span>
+
+          </div>
+        </div>
+        
+        <dialog ref={detailsDialog} className="meeting-details" aria-label="Room details">
+          <header><h2>Room details</h2><button onClick={() => detailsDialog.current.close()}>Close</button></header>
+            <p className="metadata">{interview.durationMinutes} minutes · {interview.questions?.length || 0} {interview.questions?.length === 1 ? 'question' : 'questions'}</p>
             {interview.status === 'PUBLISHED' && <button type="button" disabled={closing} onClick={closeEntry}>
               {closing ? 'Closing entry…' : 'Close entry'}
             </button>}
-          </div>
-        </div>
-        {closeError && <p role="alert">{closeError}</p>}
-        <Suspense fallback={<p role="status">Opening video…</p>}>
-          <VideoRoom id={id}/>
-        </Suspense>
+          <button type="button" disabled={closing} onClick={endMeeting}>End meeting for everyone</button>
+          {closeError && <p role="alert">{closeError}</p>}
         {interview.instructions && <details className="live-stage-instructions">
           <summary>Candidate instructions</summary>
           <p>{interview.instructions}</p>
         </details>}
         <section className="live-stage-candidates">
-          <button type="button" aria-expanded={showCandidates}
-            onClick={() => setShowCandidates(value => !value)}>
-            {showCandidates ? 'Hide candidates' : 'Show candidates'}
-          </button>
           {showCandidates && <CandidateRoster interview={interview}/>}
         </section>
+        </dialog>
       </>}
+    </div>
+    {!error && interview?.format === 'LIVE' && interview.streamCallId &&
+      <div className="meeting-stage">
+        <Suspense fallback={<p role="status">Opening video…</p>}>
+          <VideoRoom id={id}/>
+        </Suspense>
+      </div>}
   </main>;
 }

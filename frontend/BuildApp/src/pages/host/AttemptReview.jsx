@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { request } from '../../api';
 import { Answers } from '../Scorecard';
 import { problem } from './host';
@@ -11,45 +11,22 @@ const eventNames = {
   MULTIPLE_FACES: 'Multiple faces', LOOKING_AWAY: 'Looking away',
   SUSPICIOUS_GESTURE: 'Hand movement', CAMERA_DISCONNECTED: 'Camera disconnected',
 };
-const reviewNames = { PENDING: 'Awaiting review', REVIEWED: 'Reviewed', CONFIRMED: 'Confirmed', DISMISSED: 'Dismissed' };
 
 function EventTimeline({ interviewId, attemptId }) {
   const [page, setPage] = useState(1);
   const path = '/interviews/' + interviewId + '/proctoring-events';
   const { response, error, reload } = useReviewRequest(path + '?attemptId=' + attemptId + '&page=' + page + '&limit=10');
-  const [saving, setSaving] = useState(false);
-  const [failure, setFailure] = useState('');
-  const [notes, setNotes] = useState({});
-
-  async function review(event, status) {
-    setSaving(true);
-    setFailure('');
-    try {
-      await request(path + '/' + event.id, { status, reviewNotes: notes[event.id] ?? event.reviewNotes ?? '' }, 'PATCH');
-      reload();
-    } catch (error) {
-      setFailure(problem(error));
-    } finally {
-      setSaving(false);
-    }
-  }
   return <section><div className="row"><h3>Proctoring activity</h3><button onClick={reload}>Refresh activity</button></div>
-    {(error || failure) && <p role="alert">{error || failure}</p>}
+    {error && <p role="alert">{error}</p>}
     {!response && !error && <p role="status">Loading activity…</p>}
     {response && <>
       {!response.events.length && <p>No events recorded.</p>}
       <ul className="review-list">{response.events.map(event =>
         <li key={event.id}><div><strong>{eventNames[event.type] || event.type.toLowerCase().replaceAll('_', ' ')}</strong>
           <small>{new Date(event.occurredAt).toLocaleString()}{event.durationMs > 0 && ' · ' + Math.round(event.durationMs / 1000) + ' seconds'}</small>
-          <small>{event.type === 'SUSPICIOUS_GESTURE' ? 'Recorded for review · no warning counted' : 'Counted as a warning'}</small>
+          <small>{event.type === 'SUSPICIOUS_GESTURE' && !event.details?.countedAsWarning ? 'Recorded for review · no warning counted' : 'Counted as a warning'}</small>
           {event.details && Object.keys(event.details).length > 0 && <details className="event-details"><summary>Detection details</summary><pre>{JSON.stringify(event.details, null, 2)}</pre></details>}
-          <label>Review notes<textarea rows={2} maxLength={2000} value={notes[event.id] ?? event.reviewNotes ?? ''} onChange={e => setNotes(current => ({ ...current, [event.id]: e.target.value }))}/></label>
-          <button disabled={saving} onClick={() => review(event, ['REVIEWED','CONFIRMED','DISMISSED'].includes(event.status) ? event.status : 'REVIEWED')}>Save notes</button>
-        </div>
-          <label>Review status<select disabled={saving} value={event.status} onChange={e => review(event, e.target.value)}>
-            {!['REVIEWED','CONFIRMED','DISMISSED'].includes(event.status) && <option value={event.status}>{reviewNames[event.status] || event.status}</option>}
-            <option value="REVIEWED">Reviewed</option><option value="CONFIRMED">Confirmed</option><option value="DISMISSED">Dismissed</option>
-          </select></label></li>)}</ul>
+        </div></li>)}</ul>
       {response.pagination.totalPages > 1 && <div className="pagination">
         <button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous events</button>
         <span>{page} / {response.pagination.totalPages}</span>
@@ -78,12 +55,29 @@ export default function AttemptReview({ interview, participant, onBack }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const published = result?.status === 'COMPLETED';
+  useEffect(() => {
+    if (result) setFeedback(result.feedback || '');
+  }, [result?.id, result?.feedback]);
+
+  async function saveFeedback() {
+    setBusy(true);
+    setNotice('');
+    try {
+      await request(path + '/feedback', { feedback }, 'PATCH');
+      setNotice('Candidate feedback saved.');
+      reload();
+    } catch (failure) {
+      setNotice(problem(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function notifyCandidate() {
     setBusy(true);
     setNotice('');
     try {
-      await request(path + (published ? '/resend-result' : '/publish-result'), published ? {} : { feedback });
+      await request(path + (published ? '/resend-result' : '/publish-result'), published ? {} : {});
       setNotice(published ? 'Notification email queued again.' : 'Scorecard published and notification email queued.');
       reload();
     } catch (error) {
@@ -117,9 +111,12 @@ export default function AttemptReview({ interview, participant, onBack }) {
     <EventTimeline interviewId={interview.id} attemptId={attempt.id}/>
     {result && <section>
       {published ? <><h3>Published scorecard</h3>{result.feedback && <p className="instructions">{result.feedback}</p>}</> :
-        <label>Candidate feedback (optional)<textarea rows={4} maxLength={5000} value={feedback} onChange={e => setFeedback(e.target.value)}/></label>}
+        <div><label>Candidate feedback (optional)<textarea rows={4} maxLength={5000} value={feedback} onChange={e => setFeedback(e.target.value)}/></label>
+          <button type="button" disabled={busy || feedback.trim() === (result.feedback || '')} onClick={saveFeedback}>
+            Save feedback
+          </button></div>}
       {!published && <p>Publish after entry closes and all active attempts finish or expire.</p>}
-      <button className="action" disabled={busy || (!published && interview.status !== 'ARCHIVED')} onClick={notifyCandidate}>
+      <button className="action" disabled={busy || (!published && (interview.status !== 'ARCHIVED' || feedback.trim() !== (result.feedback || '')))} onClick={notifyCandidate}>
         {busy ? 'Processing…' : published ? 'Resend result email' : 'Publish and notify candidate'}</button>
     </section>}
     {notice && <p role="status">{notice}</p>}

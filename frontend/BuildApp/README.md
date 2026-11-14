@@ -2,7 +2,7 @@
 
 This is the React frontend for the current API. It covers the landing page, account access, host workspace, candidate assessment, live video room, result review, and profile. The AI worker and its future question types are outside this frontend's current API contract.
 
-Run `npm ci` and `npm run dev` in this directory. The dev server listens on localhost:3000 and proxies `/api` to the API on localhost:4000. Set `FRONTEND_URL` on the API to the browser origin so verification, reset, invitation, and result emails return here.
+For a fresh checkout, copy `.env.example` to `.env` in this directory. Set `API_PROXY_TARGET` to the backend origin, then run `npm ci` and `npm run dev`. The dev server listens on localhost:3000 and forwards `/api` to that origin. Restart Vite after changing the URL. Set `FRONTEND_URL` on the API to the browser origin so verification, reset, invitation, and result emails return here.
 
 For production, run `npm run build`, serve dist, forward /api to the API and rewrite frontend paths to index.html. Alternatively set VITE_API_BASE_URL to the full API base ending in /api/v1 at build time. The API must allow credentials from the frontend origin.
 
@@ -27,7 +27,7 @@ Open an interview from the host dashboard. Search its candidates by name or emai
 - `src/pages/host/Dashboard.jsx` switches between host and candidate workspaces. `CandidateDashboard.jsx` lists the candidate's attempts and published results.
 - `src/pages/host/InterviewOverview.jsx` controls entry, video setup, invitation sharing, and the candidate roster.
 - `src/pages/host/ShareInvitation.jsx` makes a downloadable QR code in the browser and offers browser and WhatsApp sharing for the join link.
-- `src/pages/host/AttemptReview.jsx` shows proctoring activity, profile access, feedback, publication and email retries.
+- `src/pages/host/AttemptReview.jsx` shows answers, proctoring activity, profile access, saved candidate feedback, publication and email retries.
 - `src/pages/host/useReviewRequest.js` loads review data and ignores obsolete responses when navigating.
 - `src/pages/Scorecard.jsx` renders the answer breakdown and the signed-in result page at `/results/:attemptId`. The candidate dashboard and publication email link to this page.
 
@@ -43,7 +43,7 @@ The candidate dashboard reads server-calculated totals for all attempts, active 
 
 ## Interview controls
 
-The draft editor exposes the API's optional description, scheduled start, and participant limit. The host roster refreshes every ten seconds while entry is open, shows video synchronization failures, and can retry a candidate's access. The event review screen shows details and saves notes with each status change. `src/pages/candidate/VideoRoom.jsx` uses Stream's call controls and displays the connection error when joining fails.
+The draft editor exposes the API's optional description, scheduled start, and participant limit. The host roster refreshes every ten seconds while entry is open, shows video synchronization failures, and can retry a candidate's access. The candidate review screen shows a read-only timeline of proctoring events. `src/pages/candidate/VideoRoom.jsx` uses Stream's call controls and displays the connection error when joining fails.
 The roster ignores responses from older refresh requests. The video room checks for a secure browser context before requesting a Stream token, so an unsupported connection gives an actionable message.
 The video room has a reconnect control for a dropped call or a call the person left while their assessment remains open. The assessment deadline continues to use server time.
 The roster shows submitted marks against the interview maximum, warning counts, and submission times so hosts can compare candidates before opening detailed reviews.
@@ -56,6 +56,6 @@ If final submission returns a conflict or loses its response, the assessment che
 `src/components/Frame.jsx` chooses the landing navbar for the home page and the compact app navbar for the dashboard, interview, account, and authentication pages. `src/components/AppNav.css` styles the app navbar. Theme selection works in both navbars.
 `src/navigation.js` handles same-origin links through browser history. The app listens for navigation and back/forward events, while external links, downloads, and modified clicks retain normal browser behavior.
 Links to a section on another app page scroll there after the destination renders. Retry controls on protected pages reload data in place.
-Back links sit in the page content for host interview details, the candidate invitation and assessment, the profile page, and the scorecard. The dashboard keeps its navigation without a Back button. An active assessment explains that its timer continues if the candidate leaves.
+Back links sit in the page content for host interview details, the candidate invitation, the profile page, and the scorecard. The dashboard keeps its navigation without a Back button.
 The app keeps the signed-in user, profile, and session list in its root state while navigating. Profile uploads and removals refresh the profile, session changes update or clear the session list, and signing out clears all three. The sessions card also has a manual refresh control.
 The API client shares recent GET responses across interview pages for 30 seconds and combines simultaneous requests for the same URL. Writes clear that cache. Join previews and authentication requests always go to the server, and live roster polling or explicit refreshes fetch fresh data.

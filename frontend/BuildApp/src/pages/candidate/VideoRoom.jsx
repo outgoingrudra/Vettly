@@ -17,14 +17,27 @@ function connectionError(failure) {
   return { title: 'Could not join the video room', detail: message || 'Please try again.', network: false };
 }
 
+function CallCameraMonitor({ onChange }) {
+  const { useCameraState } = useCallStateHooks();
+  const { isMute } = useCameraState({ optimisticUpdates: false });
+  useEffect(() => {
+    onChange(isMute);
+    return () => onChange(null);
+  }, [isMute, onChange]);
+  return null;
+}
+
 function RoomParticipants() {
+  const dialog = React.useRef(null);
   const { useParticipants, useLocalParticipant } = useCallStateHooks();
   const participants = useParticipants();
   const localParticipant = useLocalParticipant();
 
   return (
-    <details open className="room-participants">
-      <summary>People in the room ({participants.length})</summary>
+    <>
+      <button className="meeting-tool" type="button" aria-haspopup="dialog" onClick={() => dialog.current.showModal()}>People ({participants.length})</button>
+      <dialog className="meeting-details room-participants" ref={dialog} aria-label="People in the room">
+      <header><h2>People in the room</h2><button type="button" onClick={() => dialog.current.close()}>Close</button></header>
       <ul>
         {participants.map(person => (
           <li key={person.sessionId}>
@@ -39,15 +52,17 @@ function RoomParticipants() {
           </li>
         ))}
       </ul>
-    </details>
+      </dialog>
+    </>
   );
 }
 
-export default function VideoRoom({id}) {
+export default function VideoRoom({id, onEnded, onCameraChange, onLeaveRoom}) {
+  const [ended,setEnded]=useState(false);
   const [left,setLeft]=useState(false);
   const [session,setSession]=useState(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);
   useEffect(()=>{
-    if(left)return;
+    if(left || ended)return;
     let cancelled=false,client,call,cleanup;
     function disconnect() {
       if (!cleanup) {
@@ -67,6 +82,11 @@ export default function VideoRoom({id}) {
       if(cancelled)return;
       client=new StreamVideoClient({apiKey:data.apiKey,user:data.user,token:data.token,tokenProvider:async()=>(await token()).token});
       call=client.call('default',data.callId);
+      call.on('call.ended', () => {
+        if (cancelled) return;
+        setEnded(true);
+        onEnded?.(true);
+      });
       // Start muted. Navigating away during device setup must also cancel the join.
       await call.camera.disable();
       if (cancelled) return;
@@ -80,7 +100,8 @@ export default function VideoRoom({id}) {
       if(!cancelled)setError(connectionError(failure));
     });
     return ()=>{cancelled=true;void disconnect();};
-  },[id,retry,left]);
+  },[id,retry,left,ended,onEnded]);
+  if(ended)return <div className="room-placeholder" role="status">The host ended the video meeting.</div>;
   if(left)return <div className="room-placeholder"><h2>You left the video room</h2><button className="action" onClick={()=>setLeft(false)}>Rejoin room</button></div>;
   if(error)return <div className="room-placeholder" role="alert">
     <h2>{error.title}</h2><p>{error.detail}</p>
@@ -93,25 +114,26 @@ export default function VideoRoom({id}) {
   return <section className="video-session">
     <StreamVideo client={session.client}>
       <StreamCall call={session.call}>
-        <div className="room-grid">
-          <div className="speaker-stage">
-            <div className="stage-bar">
-              <strong>Speaker view</strong>
-              <button type="button" onClick={() => {setSession(null); setRetry(value => value + 1);}}>Reconnect</button>
-            </div>
-            <StreamTheme>
-              <div className="video-room">
-                <SpeakerLayout/>
+        {onCameraChange && <CallCameraMonitor onChange={onCameraChange}/>}
+        <StreamTheme className="meeting-video">
+          <div className="video-room">
+            <SpeakerLayout/>
+            <div className="meeting-controls">
+              <RoomParticipants/>
                 <CallControls onLeave={failure => {
                   if (failure) { setError(connectionError(failure)); return; }
                   setSession(null);
                   setLeft(true);
+                  if (onLeaveRoom) onLeaveRoom();
+                  else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
                 }}/>
-              </div>
-            </StreamTheme>
+              <button className="meeting-tool" type="button" onClick={() => {
+                setSession(null);
+                setRetry(value => value + 1);
+              }}>Reconnect</button>
+            </div>
           </div>
-          <RoomParticipants/>
-        </div>
+        </StreamTheme>
       </StreamCall>
     </StreamVideo>
   </section>;

@@ -38,7 +38,7 @@
 }
 .theme-swatch-paper { background: linear-gradient(135deg, #fffdf6 50%, #204c3c 50%); }
 .theme-swatch-clay { background: linear-gradient(135deg, #fff6eb 50%, #a76042 50%); }
-.theme-swatch-night { background: linear-gradient(135deg, #252b31 50%, #b9d9c4 50%); }
+.theme-swatch-night { background: linear-gradient(135deg, #090d10 50%, #b9d9c4 50%); }
 @media (max-width: 920px) {
   .theme-switch button { padding: 0 8px; }
   .theme-name { display: none; }

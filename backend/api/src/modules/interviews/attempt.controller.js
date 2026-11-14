@@ -35,6 +35,7 @@ export async function preview(req, res) {
     select: {
       id: true,
       title: true,
+      streamCallId: true,
       instructions: true,
       format: true,
       status: true,
@@ -247,10 +248,9 @@ export async function createProctoringEvent(req, res) {
         countedAsWarning: false,
         terminated: false,
       };
-    const event = await tx.proctoringEvent.create({ data: { attemptId: attempt.id, ...parsed.data } });
-    const countedAsWarning = type !== "SUSPICIOUS_GESTURE";
-    const warningCount = attempt.warningCount + Number(countedAsWarning);
-    const terminated = countedAsWarning && warningCount >= warningLimit;
+    const event = await tx.proctoringEvent.create({ data: { attemptId: attempt.id, ...parsed.data, details: { ...parsed.data.details, countedAsWarning: true } } });
+    const warningCount = attempt.warningCount + 1;
+    const terminated = warningCount >= warningLimit;
     const terminationReason =
       type === "CAMERA_DISCONNECTED"
         ? "Camera disconnected during the interview"
@@ -267,7 +267,7 @@ export async function createProctoringEvent(req, res) {
         where: { id: attempt.participantId },
         data: { status: "EXPIRED" },
       });
-    return { event, warningCount, warningLimit, countedAsWarning, terminated };
+    return { event, warningCount, warningLimit, countedAsWarning: true, terminated };
   });
   res.status(result.event ? 201 : 200).json({ success: true, ...result });
 }
@@ -329,6 +329,22 @@ export async function history(req, res) {
   });
   res.json({ success: true, data: attempts });
 }
+export async function saveResultFeedback(req, res) {
+  const parsed = z.object({ feedback: z.string().trim().max(5000) }).safeParse(req.body);
+  if (!parsed.success) fail(400, "Invalid feedback.");
+
+  const updated = await prisma.interviewAttempt.updateMany({
+    where: {
+      id: req.params.attemptId,
+      status: "SUBMITTED",
+      interview: { creatorId: req.user.id },
+    },
+    data: { feedback: parsed.data.feedback },
+  });
+  if (!updated.count) fail(404, "Submitted scorecard unavailable.");
+  res.json({ success: true, feedback: parsed.data.feedback });
+}
+
 export async function publishResult(req, res) {
   const parsed = z
     .object({ feedback: z.string().trim().max(5000).optional() })
@@ -348,7 +364,7 @@ export async function publishResult(req, res) {
   if (active) fail(409, "Candidates are still answering.");
   const changed = await prisma.interviewAttempt.updateMany({
     where: { id: attempt.id, status: "SUBMITTED" },
-    data: { status: "COMPLETED", completedAt: new Date(), feedback: parsed.data.feedback },
+    data: { status: "COMPLETED", completedAt: new Date(), feedback: parsed.data.feedback ?? attempt.feedback },
   });
   if (!changed.count) fail(409, "A submitted scorecard is required.");
   await notifyResult(attempt, res);

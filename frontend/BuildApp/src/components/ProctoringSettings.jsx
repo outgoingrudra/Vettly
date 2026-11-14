@@ -7,18 +7,18 @@ const checks = [
   ['faceDetectionEnabled', 'Check for a missing face or looking away', 'Camera'],
   ['multipleFaceDetectionEnabled', 'Check for multiple faces', 'Camera'],
   ['cameraDisconnectDetectionEnabled', 'Detect camera disconnection', 'Camera'],
-  ['suspiciousGestureDetectionEnabled', 'Record hand movement for review', 'Camera'],
+  ['suspiciousGestureDetectionEnabled', 'Detect repeated hand movement', 'Camera'],
 ];
 const presets = { Off: () => false, 'Browser only': group => group === 'Browser', 'Browser + camera': () => true };
 export function hasCountedWarnings(settings) {
-  return checks.some(([key]) => key !== 'suspiciousGestureDetectionEnabled' && settings[key]);
+  return checks.some(([key]) => settings[key]);
 }
 export function ProctoringSummary({settings}) {
   const enabled = checks.filter(([key]) => settings[key]);
   if (!enabled.length) return <p>Proctoring is off for this interview.</p>;
   return <><ul>{enabled.map(([key,label])=><li key={key}>{label}</li>)}</ul>
     {hasCountedWarnings(settings) && <p>The attempt closes after {settings.warningLimit} counted {Number(settings.warningLimit)===1?'warning':'warnings'}.</p>}
-    {settings.suspiciousGestureDetectionEnabled && <p>Hand movement is recorded for host review only. It does not count toward termination.</p>}</>;
+    </>;
 }
 export default function ProctoringSettings({interview,disabled}) {
   const [settings,setSettings]=useState(()=>Object.fromEntries(checks.map(([key])=>[key,interview?.[key]??true])));
@@ -35,7 +35,7 @@ export default function ProctoringSettings({interview,disabled}) {
     <label hidden={!hasCountedWarnings(settings)}>Warnings before termination
       <input type="number" min="1" max="1000" required disabled={!hasCountedWarnings(settings)} name="warningLimit" defaultValue={interview?.warningLimit??3}/>
     </label>
-    {settings.suspiciousGestureDetectionEnabled && <p>Hand movement is logged for review only.</p>}
+
   </fieldset>;
 }
 export const checkKeys = checks.map(([key])=>key);

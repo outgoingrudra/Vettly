@@ -10,8 +10,8 @@
 }
 :root[data-theme="Night"] {
   color-scheme:dark;
-  --page:#181c21; --paper:#252b31; --ink:#f4eee2; --muted:#c0bbb2; --rule:#565957;
-  --wine:#302338; --tint:#e7c4dc; --folder:#8c7769; --focus:#9bc9ff; --error:#ffab9c;
+  --page:#080b0e; --paper:#141a1e; --ink:#f3f5f2; --muted:#aebbb7; --rule:#33413e;
+  --wine:#172223; --tint:#d1e9d7; --folder:#526965; --focus:#a6dfc2; --error:#ffab9c;
 }
 * { box-sizing:border-box }
 body { margin:0; background:var(--page); color:var(--ink); font:16px/1.5 "Segoe UI",Arial,sans-serif }

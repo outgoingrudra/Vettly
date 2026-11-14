@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { request } from '../../api';
+import { auth, request } from '../../api';
+import { navigate } from '../../navigation';
 import { formatName, hostPath, problem } from './host';
 import './dashboard.css';
 import CandidateDashboard from './CandidateDashboard';
@@ -15,6 +16,7 @@ const paths = {
   broadcast:'M8 8a6 6 0 0 0 0 8 M16 8a6 6 0 0 1 0 8 M5 5a10 10 0 0 0 0 14 M19 5a10 10 0 0 1 0 14 M12 11v2',
   archive:'M3 4h18v5H3z M5 9v11h14V9 M9 13h6',
   account:'M15 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M4 21a8 8 0 0 1 16 0',
+  logout:'M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5 M14 8l4 4-4 4 M8 12h10',
   arrow:'M5 12h14 M13 6l6 6-6 6', plus:'M12 4v16 M4 12h16',
   clock:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0 M12 6v6l4 2',
 };
@@ -40,6 +42,20 @@ export default function Dashboard({user}) {
   const [filter,setFilter]=useState(''), [page,setPage]=useState(1);
   const [groups,setGroups]=useState(null), [list,setList]=useState(null);
   const [error,setError]=useState(''), [refresh,setRefresh]=useState(0);
+  const [signingOut,setSigningOut]=useState(false);
+  const [signOutError,setSignOutError]=useState('');
+  async function signOut() {
+    setSigningOut(true);
+    setSignOutError('');
+    try {
+      await auth('logout', {});
+      window.dispatchEvent(new Event('vettly:logout'));
+      navigate('/login', { replace: true });
+    } catch (failure) {
+      setSignOutError(problem(failure));
+      setSigningOut(false);
+    }
+  }
   useEffect(()=>{
     if(mode!=='host')return;
     let current=true;
@@ -65,7 +81,13 @@ export default function Dashboard({user}) {
   return <main id="content" className="dashboard">
     <aside className="dash-rail"><div className="mode-switch" role="group" aria-label="Workspace view">{['host','candidate'].map(option=><button key={option} type="button" aria-pressed={mode===option} onClick={()=>switchMode(option)}>{option==='host'?'Host':'Candidate'}</button>)}</div>
       {mode==='host' && <nav aria-label="Interview views">{[{id:'',label:'Overview',icon:'grid'},...statuses].map(s=><button key={s.label} aria-pressed={filter===s.id} onClick={()=>select(s.id)}><Icon name={s.icon}/>{s.label}</button>)}</nav>}
-      <a className="rail-account" href="/account"><Icon name="account"/>Account settings</a>
+      <div className="rail-account-actions">
+        <a className="rail-account" href="/account"><Icon name="account"/>Account settings</a>
+        <button type="button" className="rail-logout" disabled={signingOut} onClick={signOut}>
+          <Icon name="logout"/>{signingOut ? 'Signing out…' : 'Sign out'}
+        </button>
+        {signOutError && <p role="alert" className="rail-error">{signOutError}</p>}
+      </div>
     </aside>
     {mode==='candidate'?<CandidateDashboard/>:<div className="dash-body" role="region" aria-label="Interview overview" tabIndex={0}><div className="dash-heading"><div><time>{date.format(new Date())}</time><h1>Interview overview</h1></div><a className="dash-create" href={create}><Icon name="plus"/>{createLabel}</a></div>
       {error && <p role="alert" className="dash-alert">{error} <button onClick={()=>{setError('');setRefresh(x=>x+1)}}>Retry</button></p>}

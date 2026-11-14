@@ -9,6 +9,7 @@ import {
   result,
   history,
   myAttempts,
+  saveResultFeedback,
   publishResult,
   resendResult,
 } from "./attempt.controller.js";
@@ -43,6 +44,7 @@ router.get("/:id/join", requireAuth, preview);
 router.post("/:id/join", requireAuth, join);
 router.put("/:id/questions", requireAuth, setQuestions);
 router.get("/attempts/:attemptId/result", requireAuth, result);
+router.patch("/attempts/:attemptId/feedback", requireAuth, saveResultFeedback);
 router.post("/attempts/:attemptId/publish-result", requireAuth, publishResult);
 router.post("/attempts/:attemptId/resend-result", requireAuth, mailLimit, resendResult);
 router.post("/", requireAuth, createInterview);

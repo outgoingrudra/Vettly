@@ -26,13 +26,13 @@ export async function getStreamToken(req, res) {
           where: {
             userId,
             status: {
-              in: ["IN_PROGRESS"],
+              in: ["IN_PROGRESS", "COMPLETED"],
             },
           },
           select: {
             id: true,
             streamSyncedAt: true,
-            attempts: { where: { status: "IN_PROGRESS", deadline: { gte: new Date() } }, select: { deadline: true }, take: 1 },
+            attempts: { where: { OR: [{ status: "IN_PROGRESS", deadline: { gte: new Date() } }, { status: { in: ["SUBMITTED", "COMPLETED"] } }] }, select: { deadline: true, status: true }, take: 1 },
           },
         },
       },
@@ -85,7 +85,7 @@ export async function getStreamToken(req, res) {
     }
 
     const now = Math.floor(Date.now() / 1000);
-    const secondsLeft = isCreator
+    const secondsLeft = isCreator || participant.attempts[0].status !== "IN_PROGRESS"
       ? 3600
       : Math.floor((participant.attempts[0].deadline.getTime() - Date.now()) / 1000);
     const ttl = Math.max(1, Math.min(3600, secondsLeft));
@@ -306,3 +306,26 @@ export async function addParticipantToStream(interview, user) {
 }
 
 
+
+export async function endMeeting(req, res) {
+  const room = await prisma.interview.findFirst({
+    where: { id: req.params.id, creatorId: req.user.id, format: "LIVE" },
+    select: { id: true, status: true, streamCallId: true },
+  });
+  if (!room) return res.status(404).json({ success: false, message: "Meeting not found." });
+  if (!room.streamCallId) {
+    if (room.status === "ARCHIVED") return res.json({ success: true });
+    return res.status(409).json({ success: false, message: "Meeting has not started." });
+  }
+  // Closing entry first prevents new attempts while the provider ends the call.
+  await prisma.interview.update({ where: { id: room.id }, data: { status: "ARCHIVED" } });
+  const video = getStream().video;
+  const call = { type: "default", id: room.streamCallId };
+  const current = await video.getCall(call);
+  if (!current.call.ended_at) await video.endCall(call);
+  await prisma.interview.update({
+    where: { id: room.id },
+    data: { streamCallId: null, streamChatChannelId: null },
+  });
+  return res.json({ success: true });
+}
