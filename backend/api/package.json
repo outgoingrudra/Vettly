@@ -19,8 +19,8 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
-    "@stream-io/node-sdk": "^0.8.15",
-    "amqplib": "^2.2.0",
+    "@stream-io/node-sdk": "^0.9.2",
+    "amqplib": "^2.3.1",
     "argon2": "^0.45.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

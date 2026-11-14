@@ -1,6 +1,6 @@
 import { z } from "zod";
 import prisma from "../../lib/prisma.js";
-import { publishEmailJob } from "../../config/rabbitmq.js";
+import { publishEmailJob, publishAssessmentJob } from "../../config/rabbitmq.js";
 import { addParticipantToStream } from "../stream/stream.controller.js";
 import { createProctoringEventSchema } from "./interview.schemas.js";
 import { grade, questionList } from "./assessment.js";
@@ -23,7 +23,10 @@ export async function setQuestions(req, res) {
     if (!draft.count) fail(409, "An editable draft is required.");
     await tx.interviewQuestion.deleteMany({ where: { interviewId: req.params.id } });
     await tx.interviewQuestion.createMany({
-      data: questions.data.map((q, position) => ({ ...q, position, interviewId: req.params.id })),
+      data: questions.data.map((q, position) => q.kind === "WRITTEN"
+        ? { prompt: q.prompt, kind: q.kind, maxWords: q.maxWords,
+            options: [], correctOption: 0, marks: q.marks, position, interviewId: req.params.id }
+        : { ...q, maxWords: null, position, interviewId: req.params.id }),
     });
   });
   res.json({ success: true });
@@ -98,7 +101,7 @@ export async function join(req, res) {
       include: {
         questions: {
           orderBy: { position: "asc" },
-          select: { id: true, prompt: true, options: true, marks: true },
+          select: { id: true, kind: true, prompt: true, options: true, marks: true, maxWords: true },
         },
       },
     });
@@ -211,10 +214,19 @@ export async function submitInterviewAttempt(req, res) {
     });
     return tx.interviewAttempt.update({
       where: { id: attempt.id },
-      data: { submittedAt, status: "SUBMITTED", score: evaluation.total, evaluation },
-      select: { id: true, status: true, submittedAt: true },
+      data: { submittedAt, status: "SUBMITTED", score: evaluation.total, evaluation,
+        aiStatus: evaluation.items.some(item => item.kind === "WRITTEN") ? "PENDING" : "NOT_REQUIRED" },
+      select: { id: true, status: true, submittedAt: true, aiStatus: true },
     });
   });
+  if (receipt.aiStatus === "PENDING") {
+    try {
+      await publishAssessmentJob(receipt.id);
+    } catch (error) {
+      console.error("Assessment queue unavailable:", error);
+      // The worker also scans pending attempts, so the submission remains complete.
+    }
+  }
   res.json({ success: true, attempt: receipt });
 }
 
@@ -286,6 +298,7 @@ export async function result(req, res) {
       status: true,
       score: true,
       evaluation: true,
+      aiStatus: true,
       feedback: true,
       submittedAt: true,
       interview: { select: { title: true } },
@@ -358,6 +371,8 @@ export async function publishResult(req, res) {
     },
   });
   if (!attempt) fail(409, "Close entry before publishing results.");
+  if (attempt.aiStatus !== "NOT_REQUIRED" && attempt.aiStatus !== "COMPLETED")
+    fail(409, "Written answers are still being evaluated.");
   const active = await prisma.interviewAttempt.count({
     where: { interviewId: attempt.interviewId, status: "IN_PROGRESS", deadline: { gte: new Date() } },
   });
@@ -368,6 +383,17 @@ export async function publishResult(req, res) {
   });
   if (!changed.count) fail(409, "A submitted scorecard is required.");
   await notifyResult(attempt, res);
+}
+export async function retryAssessment(req, res) {
+  const updated = await prisma.interviewAttempt.updateMany({
+    where: { id: req.params.attemptId, status: "SUBMITTED",
+      aiStatus: "FAILED", interview: { creatorId: req.user.id } },
+    data: { aiStatus: "PENDING" },
+  });
+  if (!updated.count) fail(409, "A failed written assessment is required.");
+  try { await publishAssessmentJob(req.params.attemptId); }
+  catch (error) { console.error("Assessment queue unavailable:", error); }
+  res.json({ success: true, aiStatus: "PENDING" });
 }
 async function notifyResult(attempt, res) {
   try {

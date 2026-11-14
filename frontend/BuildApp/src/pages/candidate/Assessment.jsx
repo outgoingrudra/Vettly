@@ -169,12 +169,19 @@ export default function Assessment({view,interview,session,camera,onFinish}){
     }
   }
   async function submit(){
+    if (filled !== questions.length) {
+      setNotice('Answer every question before submitting.');
+      return;
+    }
     setBusy(true);setNotice('');
-    try{await request('/interviews/attempts/'+attempt.id+'/submit',{answers:questions.filter(q=>Number.isInteger(answers[q.id])).map(q=>({questionId:q.id,selectedOption:answers[q.id]}))});onFinish('Answers submitted. Your host will review your scorecard.',key,interview.format==='LIVE');}
+    try{await request('/interviews/attempts/'+attempt.id+'/submit',{answers:questions.filter(q=>q.kind==='WRITTEN' ? !!answers[q.id]?.trim() : Number.isInteger(answers[q.id])).map(q=>q.kind==='WRITTEN'
+      ? {questionId:q.id,text:answers[q.id].trim()}
+      : {questionId:q.id,selectedOption:answers[q.id]})});onFinish('Answers submitted. Your host will review your scorecard.',key,interview.format==='LIVE');}
     catch(e){if(e.status===401)requireLogin();else if(e.status===409 || e.status>=500 || e instanceof TypeError)await checkSubmission();else setNotice('Submission failed. Your selections are still here. Try again.');}
     finally{setBusy(false);}
   }
-  const filled=questions.filter(q=>Number.isInteger(answers[q.id])).length;
+  const answered=q=>q.kind==='WRITTEN' ? !!answers[q.id]?.trim() : Number.isInteger(answers[q.id]);
+  const filled=questions.filter(answered).length;
   return <section className={videoPage ? "candidate-meeting" : "assessment-desk"}>
     <div className={videoPage ? "meeting-info" : "assessment-header"}>
     <header className="room-heading">
@@ -220,28 +227,40 @@ export default function Assessment({view,interview,session,camera,onFinish}){
         <h2>Your progress</h2>
         <progress value={filled} max={questions.length || 1} aria-label="Questions answered"/>
         <p>{filled} of {questions.length} answered</p>
-        <div className="question-numbers">{questions.map((question, index) => (
-          <button type="button" key={question.id} disabled={busy} aria-label={`Question ${index+1}, ${Number.isInteger(answers[question.id])?'answered':'unanswered'}`}
-            data-answered={Number.isInteger(answers[question.id])}
-            aria-current={!review && questionIndex===index?'step':undefined}
-            onClick={()=>{setQuestionIndex(index);setReview(false)}}>{index+1}</button>
-        ))}</div>
+        {['MCQ','WRITTEN'].map(kind => {
+          const group = questions.map((question,index)=>({question,index})).filter(({question})=>(question.kind || 'MCQ')===kind);
+          if (!group.length) return null;
+          return <div key={kind} className="question-group"><h3>{kind==='MCQ'?'Multiple choice':'Written answers'}</h3>
+            <div className="question-numbers">{group.map(({question,index},position) => (
+              <button type="button" key={question.id} disabled={busy} aria-label={`${kind==='WRITTEN'?'Written question':'MCQ'} ${position+1}, ${answered(question)?'answered':'unanswered'}`}
+                data-answered={answered(question)}
+                aria-current={!review && questionIndex===index?'step':undefined}
+                onClick={()=>{setQuestionIndex(index);setReview(false)}}>{position+1}</button>
+            ))}</div></div>;
+        })}
         {!review && questions.length > 1 && questionIndex < questions.length - 1 &&
           <button type="button" className="review-shortcut" disabled={busy || uncertain}
             onClick={() => setReview(true)}>Review answers</button>}
       </aside>
       <fieldset disabled={busy || needsFull || !seconds || uncertain} className="answer-sheet">
-        <legend>{review?'Review your answers':questions.length?`Question ${questionIndex+1} of ${questions.length}`:'Live interview'}</legend>
+        <legend>{review?'Review your answers':questions.length?`${questions[questionIndex].kind==='WRITTEN'?'Written question':'Multiple choice'} · ${questionIndex+1} of ${questions.length}`:'Live interview'}</legend>
         {!questions.length && <p>This interview has no written questions. Submit when your conversation is finished.</p>}
         {questions.map((question,index)=>(review || index===questionIndex) && (
           <fieldset key={question.id} className="candidate-question">
             <legend>{review && `${index+1}. `}{question.prompt}</legend>
             <small>{question.marks} {question.marks===1?'mark':'marks'}</small>
             {review ? <div className="review-selection">
-              <p>{question.options[answers[question.id]] ?? 'Unanswered'}</p>
+              <p>{question.kind==='WRITTEN' ? answers[question.id] || 'Unanswered' : question.options[answers[question.id]] ?? 'Unanswered'}</p>
               <button type="button" aria-label={`Edit answer to question ${index+1}`}
                 onClick={() => { setQuestionIndex(index); setReview(false); }}>Edit</button>
-            </div> : question.options.map((option,choice)=>(
+            </div> : question.kind==='WRITTEN' ? <label className="written-answer">Your answer
+              <textarea rows="8" value={answers[question.id] || ''} onChange={event=>{
+                const value=event.target.value;
+                if(value.trim().split(/\s+/u).filter(Boolean).length<=question.maxWords)
+                  setAnswers(previous=>({...previous,[question.id]:value}));
+              }} aria-describedby={'words-'+question.id}/>
+              <small id={'words-'+question.id}>{(answers[question.id] || '').trim().split(/\s+/u).filter(Boolean).length} / {question.maxWords} words</small>
+            </label> : question.options.map((option,choice)=>(
               <label key={choice} className="answer-option">
                 <input type="radio" name={question.id} checked={answers[question.id]===choice}
                   onChange={()=>setAnswers(previous=>({...previous,[question.id]:choice}))}/>
@@ -253,7 +272,7 @@ export default function Assessment({view,interview,session,camera,onFinish}){
         {review && <p>{questions.length-filled} unanswered. Submitting closes this attempt.</p>}
         <div className="question-steps">
           {review ? <><button onClick={()=>setReview(false)}>Edit answers</button>
-            <button className="action" onClick={submit}>{busy?'Submitting…':'Submit final answers'}</button></> :
+            <button className="action" disabled={filled!==questions.length} onClick={submit}>{busy?'Submitting…':'Submit final answers'}</button></> :
             <>{questionIndex>0 && <button onClick={()=>setQuestionIndex(questionIndex-1)}>Previous</button>}
               {questionIndex<questions.length-1 ? <button className="action" onClick={()=>setQuestionIndex(questionIndex+1)}>Next question →</button>
                 : <button className="action" onClick={()=>setReview(true)}>Review answers →</button>}</>}

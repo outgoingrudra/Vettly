@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL;
 const EMAIL_QUEUE = process.env.RABBITMQ_QUEUE || "vettly.email";
+const ASSESSMENT_QUEUE = process.env.RABBITMQ_AI_QUEUE || "vettly.assessment";
 
 const RETRY_QUEUE = `${EMAIL_QUEUE}.retry`;
 const DEAD_QUEUE = `${EMAIL_QUEUE}.dlq`;
@@ -101,6 +102,17 @@ export async function publishEmailJob(job) {
   if (!accepted) {
     console.warn("RabbitMQ publisher backpressure detected.");
   }
+}
+
+export async function publishAssessmentJob(attemptId) {
+  const ch = channel || await connectRabbitMQ();
+  await ch.assertQueue(ASSESSMENT_QUEUE, { durable: true });
+  ch.sendToQueue(ASSESSMENT_QUEUE, Buffer.from(JSON.stringify({ attemptId })), {
+    persistent: true,
+    contentType: "application/json",
+    messageId: randomUUID(),
+  });
+  await ch.waitForConfirms();
 }
 
 export async function closeRabbitMQ() {

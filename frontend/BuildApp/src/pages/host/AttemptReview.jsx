@@ -55,6 +55,12 @@ export default function AttemptReview({ interview, participant, onBack }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const published = result?.status === 'COMPLETED';
+  const aiReady = !result || ['NOT_REQUIRED','COMPLETED'].includes(result.aiStatus);
+  useEffect(() => {
+    if (!['PENDING','PROCESSING','RETRYING'].includes(result?.aiStatus)) return;
+    const timer = setInterval(reload, 10000);
+    return () => clearInterval(timer);
+  }, [result?.aiStatus]);
   useEffect(() => {
     if (result) setFeedback(result.feedback || '');
   }, [result?.id, result?.feedback]);
@@ -88,6 +94,19 @@ export default function AttemptReview({ interview, participant, onBack }) {
       setBusy(false);
     }
   }
+  async function retryAiReview() {
+    setBusy(true);
+    setNotice('');
+    try {
+      await request(path + '/retry-assessment', {});
+      setNotice('AI review queued again.');
+      reload();
+    } catch (failure) {
+      setNotice(problem(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function viewResume() {
     setOpeningResume(true);setProfileError('');
     try { await openResume(participant.userId); }
@@ -102,6 +121,7 @@ export default function AttemptReview({ interview, participant, onBack }) {
     {error && <p role="alert">{error} <button onClick={reload}>Retry</button></p>}
     {submitted && !result && !error && <p role="status">Loading answers…</p>}
     {result && <section><Answers result={result}/>
+      {result.aiStatus === 'FAILED' && <button disabled={busy} onClick={retryAiReview}>Retry AI review</button>}
       {participant.userId && <button aria-expanded={showProfile} onClick={() => setShowProfile(!showProfile)}>{showProfile ? 'Hide profile' : 'View candidate profile'}</button>}
       {showProfile && <div>{profile.error ? <p role="alert">{profile.error} <button onClick={profile.reload}>Retry</button></p> :
         profile.response ? <><p>{profile.response.data.name} · {profile.response.data.hasResume ?
@@ -116,7 +136,7 @@ export default function AttemptReview({ interview, participant, onBack }) {
             Save feedback
           </button></div>}
       {!published && <p>Publish after entry closes and all active attempts finish or expire.</p>}
-      <button className="action" disabled={busy || (!published && (interview.status !== 'ARCHIVED' || feedback.trim() !== (result.feedback || '')))} onClick={notifyCandidate}>
+      <button className="action" disabled={busy || (!published && (!aiReady || interview.status !== 'ARCHIVED' || feedback.trim() !== (result.feedback || '')))} onClick={notifyCandidate}>
         {busy ? 'Processing…' : published ? 'Resend result email' : 'Publish and notify candidate'}</button>
     </section>}
     {notice && <p role="status">{notice}</p>}

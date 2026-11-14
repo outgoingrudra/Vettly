@@ -195,6 +195,7 @@ model InterviewAttempt {
   streamChatChannelId String?
   score               Float?
   evaluation          Json?
+  aiStatus            String @default("NOT_REQUIRED")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -264,6 +265,8 @@ model InterviewQuestion {
   options String[]
   correctOption Int
   marks Int @default(1)
+  kind String @default("MCQ")
+  maxWords Int?
   interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
   @@unique([interviewId, position])
 }

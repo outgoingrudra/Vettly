@@ -529,7 +529,7 @@ export async function listInterviewParticipants(req, res) {
           userId: true,
           status: true,
           user: { select: { name: true } },
-          attempts: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, deadline: true, submittedAt: true, score: true, warningCount: true, terminationReason: true } },
+          attempts: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, deadline: true, submittedAt: true, score: true, aiStatus: true, warningCount: true, terminationReason: true } },
           invitedAt: true,
           invitationExpiresAt: true,
           acceptedAt: true,

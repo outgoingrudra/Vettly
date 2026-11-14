@@ -91,7 +91,7 @@ export default function InterviewOverview({ interview, update }) {
           </p>
           <h2>Proctoring</h2>
           <ProctoringSummary settings={interview} />
-          <details className="host-answer-key"><summary>Answer key · {questions.length} {questions.length === 1 ? "question" : "questions"}</summary>
+          <details className="host-answer-key"><summary>Questions · {questions.length} {questions.length === 1 ? "question" : "questions"}</summary>
           {questions.length === 0 ? (
             <p>No questions added yet.</p>
           ) : (
@@ -99,10 +99,8 @@ export default function InterviewOverview({ interview, update }) {
               {questions.map((q) => (
                 <li key={q.id}>
                   <strong>{q.prompt}</strong>
-                  <p>
-                    {q.options[q.correctOption]} · {q.marks}{" "}
-                    {q.marks === 1 ? "mark" : "marks"}
-                  </p>
+                  <p>{q.kind === "WRITTEN" ? `Written answer · ${q.maxWords} words maximum` :
+                    `${q.options[q.correctOption]} · ${q.marks} ${q.marks === 1 ? "mark" : "marks"}`}</p>
                 </li>
               ))}
             </ol>

@@ -25,6 +25,12 @@
 .workspace.candidate-room,.workspace.live-stage {width:min(1180px,100%);max-width:none}
 .workspace .assessment-layout {display:grid;grid-template-columns:minmax(155px,220px) minmax(0,1fr);align-items:start;gap:clamp(16px,3vw,40px);margin-top:24px}
 .question-map,.workspace .answer-sheet,.overview-grid>article {background:var(--paper);border:1px solid var(--home-rule);border-radius:12px;padding:clamp(18px,3vw,38px);min-width:0}
+.written-answer {display:block;margin-top:18px}
+.written-answer textarea {display:block;width:100%;min-height:190px;margin:9px 0 5px;padding:14px 16px;resize:vertical;border:1px solid var(--home-rule);border-radius:8px;background:var(--home-bg);color:var(--home-ink);font:inherit;line-height:1.6}
+.written-answer small {display:block;text-align:right;color:var(--home-muted)}
+.review-selection p {white-space:pre-wrap;overflow-wrap:anywhere}
+.question-group {margin-top:20px}
+.question-group h3 {margin:0 0 9px;color:var(--home-muted);font-size:13px;font-weight:650}
 .question-map {padding:20px}
 .workspace .question-map h2 {font:650 1rem system-ui}
 .question-map progress {width:100%;height:7px;accent-color:var(--button-bg)}

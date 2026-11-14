@@ -23,7 +23,7 @@ The public landing page at `/` includes a local sample interview walkthrough. It
 Open an interview from the host dashboard. Search its candidates by name or email and choose **Review attempt**. A submitted attempt includes the MCQ breakdown and the candidate’s current profile. Proctoring events have their own review status. Close entry and wait for active attempts to finish or expire before publishing individual scorecards.
 
 - `src/pages/host/CandidateRoster.jsx` lists and searches the interview’s candidates.
-- `src/pages/host/DraftEditor.jsx` creates and edits draft interviews, questions, schedule, participant limits, and proctoring settings. The overview can start an interview or delete an unused draft.
+- `src/pages/host/DraftEditor.jsx` creates and edits draft interviews, MCQs, written questions, schedule, participant limits, and proctoring settings. Hosts set a word limit of up to 300 for each written question. The overview can start an interview or delete an unused draft.
 - `src/pages/host/Dashboard.jsx` switches between host and candidate workspaces. `CandidateDashboard.jsx` lists the candidate's attempts and published results.
 - `src/pages/host/InterviewOverview.jsx` controls entry, video setup, invitation sharing, and the candidate roster.
 - `src/pages/host/ShareInvitation.jsx` makes a downloadable QR code in the browser and offers browser and WhatsApp sharing for the join link.
@@ -50,6 +50,7 @@ The roster shows submitted marks against the interview maximum, warning counts, 
 The candidate invitation refreshes attempt status after a failed join and shows the remaining time when an attempt has already started. It uses the API's server time to keep the countdown aligned with the submission deadline.
 Candidates can check whether a submitted result has been published from the original invitation page and open its scorecard there once available.
 If final submission returns a conflict or loses its response, the assessment checks the attempt status before clearing saved answers. If status cannot be confirmed, candidates can retry the status check while their selections remain in this tab.
+The assessment presents MCQs and written questions in separate sections with one question per page. Every question requires an answer. Written responses are stored with the attempt. The separate AI worker grades them after submission and adds per-answer reasons and an overall summary. The host reviews those results before publishing the scorecard.
 
 ## Navigation
 

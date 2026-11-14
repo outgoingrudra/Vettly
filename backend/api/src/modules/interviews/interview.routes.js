@@ -11,6 +11,7 @@ import {
   myAttempts,
   saveResultFeedback,
   publishResult,
+  retryAssessment,
   resendResult,
 } from "./attempt.controller.js";
 import { Router } from "express";
@@ -46,6 +47,7 @@ router.put("/:id/questions", requireAuth, setQuestions);
 router.get("/attempts/:attemptId/result", requireAuth, result);
 router.patch("/attempts/:attemptId/feedback", requireAuth, saveResultFeedback);
 router.post("/attempts/:attemptId/publish-result", requireAuth, publishResult);
+router.post("/attempts/:attemptId/retry-assessment", requireAuth, retryAssessment);
 router.post("/attempts/:attemptId/resend-result", requireAuth, mailLimit, resendResult);
 router.post("/", requireAuth, createInterview);
 router.get("/", requireAuth, listMyInterviews);

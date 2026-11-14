@@ -65,6 +65,8 @@ export default function CandidateRoster({ interview }) {
             {person.attempts[0]?.submittedAt && <small>Submitted {new Date(person.attempts[0].submittedAt).toLocaleString()}</small>}</div>
             {person.attempts[0]?.score != null && <div className="roster-score">
               <strong>{person.attempts[0].score}{maximum > 0 && ' / ' + maximum}</strong>
+              {['PENDING','PROCESSING','RETRYING'].includes(person.attempts[0].aiStatus) && <small>AI review in progress</small>}
+              {person.attempts[0].aiStatus === 'FAILED' && <small>AI review needs retry</small>}
               <small>{maximum === 1 ? 'mark' : 'marks'}{person.attempts[0].warningCount > 0 && ' · ' + person.attempts[0].warningCount + ' warnings'}</small>
             </div>}
             <div className="roster-actions">
