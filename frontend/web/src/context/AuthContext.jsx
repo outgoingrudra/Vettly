@@ -15,27 +15,26 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Load the currently authenticated user.
   const refreshUser = useCallback(async () => {
     try {
       const response = await apiRequest("/auth/me");
 
       const currentUser =
-        response?.data?.user ?? response?.user ?? null;
-
-      if (!currentUser) {
-        setUser(null);
-        return null;
-      }
+        response?.data?.user ??
+        response?.user ??
+        null;
 
       setUser(currentUser);
+
       return currentUser;
     } catch (error) {
       setUser(null);
 
-      if (error.status !== 401) {
+      if (error?.status !== 401) {
         console.error(
           "Unable to load the current user:",
-          error.message
+          error?.message || error
         );
       }
 
@@ -45,10 +44,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Check the existing session when the application loads.
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
 
+  // Login.
   const login = useCallback(
     async (credentials) => {
       await apiRequest("/auth/login", {
@@ -56,11 +57,12 @@ export function AuthProvider({ children }) {
         body: credentials,
       });
 
+      // Verify the session using the backend.
       const currentUser = await refreshUser();
 
       if (!currentUser) {
         throw new Error(
-          "Login succeeded, but the user session could not be loaded."
+          "Login succeeded, but the user session could not be loaded. Please try again."
         );
       }
 
@@ -69,12 +71,21 @@ export function AuthProvider({ children }) {
     [refreshUser]
   );
 
+  // Logout.
   const logout = useCallback(async () => {
     try {
       await apiRequest("/auth/logout", {
         method: "POST",
       });
+    } catch (error) {
+      console.error(
+        "Logout request failed:",
+        error?.message || error
+      );
+
+      throw error;
     } finally {
+      // Clear local authentication state.
       setUser(null);
     }
   }, []);
@@ -82,8 +93,11 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     setUser,
+
     authLoading,
+
     isAuthenticated: Boolean(user),
+
     login,
     logout,
     refreshUser,

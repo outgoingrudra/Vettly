@@ -217,6 +217,29 @@ const interviewService = {
     );
   },
 
+
+
+  // Save host feedback for an attempt.
+saveResultFeedback(attemptId, feedback) {
+  return apiRequest(
+    `${INTERVIEW_API}/attempts/${attemptId}/feedback`,
+    {
+      method: "PATCH",
+      body: { feedback },
+    }
+  );
+},
+
+// Retry assessment evaluation.
+retryAssessment(attemptId) {
+  return apiRequest(
+    `${INTERVIEW_API}/attempts/${attemptId}/retry-assessment`,
+    {
+      method: "POST",
+    }
+  );
+},
+
   // Host publishes a result.
   publishResult(attemptId, feedback) {
     return apiRequest(

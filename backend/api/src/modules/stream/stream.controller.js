@@ -111,13 +111,16 @@ export async function getStreamToken(req, res) {
       },
     });
   } catch (error) {
-    console.error("Get Stream token error:", error);
+    console.error("STREAM SETUP INTERNAL ERROR:", error);
 
     return res.status(500).json({
-      success: false,
-      message: "Unable to generate Stream access token.",
+        success: false,
+        message: "Unable to configure interview video and chat.",
+        ...(process.env.NODE_ENV !== "production" && {
+            debug: error.message,
+        }),
     });
-  }
+}
 }
 
 export async function setupInterviewStream(req, res) {
@@ -260,13 +263,16 @@ export async function setupInterviewStream(req, res) {
       },
     });
   } catch (error) {
-    console.error("Stream setup failed:", error);
+    console.error("STREAM SETUP INTERNAL ERROR:", error);
 
     return res.status(500).json({
-      success: false,
-      message: "Unable to configure interview video and chat.",
+        success: false,
+        message: "Unable to configure interview video and chat.",
+        ...(process.env.NODE_ENV !== "production" && {
+            debug: error.message,
+        }),
     });
-  }
+}
 }
 
 

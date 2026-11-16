@@ -34,17 +34,20 @@ export async function apiRequest(
     ? await response.json()
     : await response.text();
 
-  if (!response.ok) {
-    const error = new Error(
-      typeof data === "object" && data?.message
-        ? data.message
-        : `Request failed with status ${response.status}.`,
-    );
+ if (!response.ok) {
+  console.error("API Error Status:", response.status);
+  console.error("API Error Response:", JSON.stringify(data, null, 2));
 
-    error.status = response.status;
-    error.data = data;
-    throw error;
-  }
+  const error = new Error(
+    typeof data === "object" && data?.message
+      ? data.message
+      : `Request failed with status ${response.status}.`
+  );
+
+  error.status = response.status;
+  error.data = data;
+  throw error;
+}
 
   return data;
 }

@@ -10,10 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stream-io/video-react-sdk": "^1.46.3",
     "@tailwindcss/vite": "^4.3.3",
+    "lucide-react": "^1.73.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.5",
+    "stream-chat": "^10.0.2",
+    "stream-chat-react": "^15.0.1",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

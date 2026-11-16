@@ -25,6 +25,13 @@ function InterviewDetails() {
     try {
       const response = await interviewService.getInterview(id);
 
+      console.log("FULL API RESPONSE:", response);
+      console.log("INTERVIEW DATA:", response?.data?.interview);
+      console.log(
+        "QUESTIONS FROM API:",
+        response?.data?.interview?.questions
+      );
+
       const interviewData =
         response?.data?.interview ?? response?.data;
 
@@ -201,226 +208,236 @@ function InterviewDetails() {
 
         <hr />
 
-        
+
         <div
-  style={{
-    marginTop: "25px",
-    padding: "20px",
-    border: "1px solid #334155",
-    borderRadius: "12px",
-  }}
->
-  <h3>Interview Management</h3>
+          style={{
+            marginTop: "25px",
+            padding: "20px",
+            border: "1px solid #334155",
+            borderRadius: "12px",
+          }}
+        >
+          <h3>Interview Management</h3>
 
-  <p style={{ color: "yellow" }}>
-  Current Status: {JSON.stringify(interview.status)}
-</p>
+          <p style={{ color: "yellow" }}>
+            Current Status: {JSON.stringify(interview.status)}
+          </p>
 
-<p style={{ color: "cyan" }}>
-  Published Condition: {String(interview.status === "PUBLISHED")}
-</p>
+          <p style={{ color: "cyan" }}>
+            Published Condition: {String(interview.status === "PUBLISHED")}
+          </p>
 
-  {message && <p>{message}</p>}
-  {error && <p style={{ color: "red" }}>{error}</p>}
+          {message && <p>{message}</p>}
+          {error && <p style={{ color: "red" }}>{error}</p>}
 
-  {interview.status === "DRAFT" ? (
-    <>
-      <p>This interview is currently a draft.</p>
+          {interview.status === "DRAFT" ? (
+            <>
+              <p>This interview is currently a draft.</p>
 
-<button
-  type="button"
-  onClick={handlePublish}
-  disabled={actionLoading}
-  style={{
-    display: "inline-block",
-    backgroundColor: "#16a34a",
-    color: "#ffffff",
-    padding: "12px 24px",
-    margin: "8px 10px 8px 0",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: actionLoading ? "not-allowed" : "pointer",
-    opacity: actionLoading ? 0.6 : 1,
-  }}
->
-  {actionLoading ? "Publishing..." : "Publish Interview"}
-</button>
-
-
-
-<button
-  type="button"
-  onClick={() => navigate(`/interviews/${id}/edit`)}
-  style={{
-    display: "inline-block",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    padding: "12px 24px",
-    margin: "8px 10px 8px 0",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-  }}
->
-  Edit Interview
-</button>
-
-<button onClick={() => navigate(`/interviews/${id}/questions`)}>
-  Manage Questions
-</button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={actionLoading}
+                style={{
+                  display: "inline-block",
+                  backgroundColor: "#16a34a",
+                  color: "#ffffff",
+                  padding: "12px 24px",
+                  margin: "8px 10px 8px 0",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  cursor: actionLoading ? "not-allowed" : "pointer",
+                  opacity: actionLoading ? 0.6 : 1,
+                }}
+              >
+                {actionLoading ? "Publishing..." : "Publish Interview"}
+              </button>
 
 
-      
-<button
-  type="button"
-  onClick={handleArchive}
-  disabled={actionLoading}
-  style={{
-    display: "inline-block",
-    background: "#dc2626",
-    color: "#ffffff",
-    padding: "12px 24px",
-    marginTop: "15px",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: actionLoading ? "not-allowed" : "pointer",
-    opacity: actionLoading ? 0.6 : 1,
-  }}
->
-  {actionLoading ? "Archiving..." : "Archive Interview"}
-</button>
+
+              <button
+                type="button"
+                onClick={() => navigate(`/interviews/${id}/edit`)}
+                style={{
+                  display: "inline-block",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  padding: "12px 24px",
+                  margin: "8px 10px 8px 0",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Edit Interview
+              </button>
+
+              <button onClick={() => navigate(`/interviews/${id}/questions`)}>
+                Manage Questions
+              </button>
 
 
-      <button
-        type="button"
-        onClick={handleDelete}
-        disabled={actionLoading}
-        style={{
-        display: "inline-block",
-        background: "#dc2626",
-        color: "#ffffff",
-        padding: "12px 24px",
-        marginTop: "15px",
-        marginLeft : "10px",
-        border: "none",
-        borderRadius: "8px",
-        fontSize: "15px",
-        fontWeight: "600",
-        cursor: actionLoading ? "not-allowed" : "pointer",
-        opacity: actionLoading ? 0.6 : 1,
-    }}
-      >
-        {actionLoading ? "Deleting..." : "Delete Interview"}
-      </button>
-    </>
-  ) : null}
 
-  
-{interview.status === "PUBLISHED" && (
-  <div style={{ marginTop: "20px" }}>
-    <p style={{ color: "#ffffff", marginBottom: "15px" }}>
-      This interview is published and available to candidates.
-    </p>
-
-    <button
-      type="button"
-      onClick={handleArchive}
-      disabled={actionLoading}
-      style={{
-        display: "block",
-        backgroundColor: "#dc2626",
-        color: "#ffffff",
-        padding: "14px 28px",
-        border: "2px solid #ffffff",
-        borderRadius: "8px",
-        fontSize: "16px",
-        fontWeight: "bold",
-        cursor: "pointer",
-        visibility: "visible",
-        opacity: 1,
-      }}
-    >
-      {actionLoading ? "Archiving..." : "Archive Interview"}
-    </button>
-  </div>
-)}
+              <button
+                type="button"
+                onClick={handleArchive}
+                disabled={actionLoading}
+                style={{
+                  display: "inline-block",
+                  background: "#dc2626",
+                  color: "#ffffff",
+                  padding: "12px 24px",
+                  marginTop: "15px",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  cursor: actionLoading ? "not-allowed" : "pointer",
+                  opacity: actionLoading ? 0.6 : 1,
+                }}
+              >
+                {actionLoading ? "Archiving..." : "Archive Interview"}
+              </button>
 
 
-  {interview.status === "ARCHIVED" ? (
-    <p>This interview has been archived.</p>
-  ) : null}
-</div>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={actionLoading}
+                style={{
+                  display: "inline-block",
+                  background: "#dc2626",
+                  color: "#ffffff",
+                  padding: "12px 24px",
+                  marginTop: "15px",
+                  marginLeft: "10px",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  cursor: actionLoading ? "not-allowed" : "pointer",
+                  opacity: actionLoading ? 0.6 : 1,
+                }}
+              >
+                {actionLoading ? "Deleting..." : "Delete Interview"}
+              </button>
+            </>
+          ) : null}
+
+
+          {interview?.format === "LIVE" &&
+            interview?.status === "PUBLISHED" && (
+              <button
+                type="button"
+                onClick={() => navigate(`/interviews/${id}/video`)}
+              >
+                Join live interview
+              </button>
+            )}
+
+          {interview.status === "PUBLISHED" && (
+            <div style={{ marginTop: "20px" }}>
+              <p style={{ color: "#ffffff", marginBottom: "15px" }}>
+                This interview is published and available to candidates.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleArchive}
+                disabled={actionLoading}
+                style={{
+                  display: "block",
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  padding: "14px 28px",
+                  border: "2px solid #ffffff",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  visibility: "visible",
+                  opacity: 1,
+                }}
+              >
+                {actionLoading ? "Archiving..." : "Archive Interview"}
+              </button>
+            </div>
+          )}
+
+
+          {interview.status === "ARCHIVED" ? (
+            <p>This interview has been archived.</p>
+          ) : null}
+        </div>
 
 
       </div>
 
 
-        {/* QUESTIONS PREVIEW */}
+      {/* QUESTIONS PREVIEW */}
 
-        <div className="interview-questions-preview">
-          <hr />
+      <div className="interview-questions-preview">
+        <hr />
 
-          <h3>Questions & Answers</h3>
+        <h3>Questions & Answers</h3>
 
-          <p>
-            Total Questions:{" "}
-            {Array.isArray(interview.questions)
-              ? interview.questions.length
-              : 0}
-          </p>
+        <p>
+          Total Questions:{" "}
+          {Array.isArray(interview.questions)
+            ? interview.questions.length
+            : 0}
+        </p>
 
-          {Array.isArray(interview.questions) &&
+        {Array.isArray(interview.questions) &&
           interview.questions.length > 0 ? (
-            <>
-              <p>
-                Total Marks:{" "}
-                {interview.questions.reduce(
-                  (total, question) =>
-                    total + Number(question.marks || 1),
-                  0
-                )}
-              </p>
+          <>
+            <p>
+              Total Marks:{" "}
+              {interview.questions.reduce(
+                (total, question) =>
+                  total + Number(question.marks || 1),
+                0
+              )}
+            </p>
 
-              {interview.questions.map((question, index) => (
-                <div className="question-card" key={question.id || index}>
-                  <h4>
-                    Question {index + 1}
-                    <span> ({question.marks || 1} Marks)</span>
-                  </h4>
+            {interview.questions.map((question, index) => (
+              <div className="question-card" key={question.id || index}>
+                <h4>
+                  Question {index + 1}
+                  <span> ({question.marks || 1} Marks)</span>
+                </h4>
 
-                  <p>{question.prompt}</p>
+                <p>{question.prompt}</p>
 
-                  <ol type="A">
-                    {question.options.map((option, optionIndex) => (
-                      <li
-                        key={optionIndex}
-                        className={
-                          optionIndex === question.correctOption
-                            ? "correct-answer"
-                            : ""
-                        }
-                      >
-                        {option}
+                <ol type="A">
+                  {question.options.map((option, optionIndex) => (
+                    <li
+                      key={optionIndex}
+                      className={
+                        optionIndex === question.correctOption
+                          ? "correct-answer"
+                          : ""
+                      }
+                    >
+                      {option}
 
-                        {optionIndex === question.correctOption && (
-                          <strong> ✓ Correct Answer</strong>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              ))}
-            </>
-          ) : (
-            <p>No questions have been added to this interview yet.</p>
-          )}
-        </div>
+                      {optionIndex === question.correctOption && (
+                        <strong> ✓ Correct Answer</strong>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </>
+        ) : (
+          <p>No questions have been added to this interview yet.</p>
+        )}
+      </div>
 
     </div>
   );

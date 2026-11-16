@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import interviewService from "../services/interviewService.js";
 
+import ProctoringSettings from "../../proctoring/components/ProctoringSettings.jsx";
 import "../styles/interview.css";
 
 function CreateInterview() {
@@ -50,6 +51,14 @@ function CreateInterview() {
       [name]: type === "checkbox" ? checked : value,
     }));
   }
+
+
+  function handleProctoringSettingChange(key, value) {
+  setFormData((previous) => ({
+    ...previous,
+    [key]: value,
+  }));
+}
 
 
 // Update question fields
@@ -470,141 +479,23 @@ async function handleSubmit(event) {
 
         {/* SECURITY SETTINGS */}
 
-        <section className="form-section">
-          <div className="form-section-heading">
-            <span className="form-section-number">03</span>
+<section className="form-section">
+  <div className="form-section-heading">
+    <span className="form-section-number">03</span>
 
-            <div>
-              <h2>Security & Proctoring</h2>
-              <p>
-                Configure monitoring and candidate security settings.
-              </p>
-            </div>
-          </div>
+    <div>
+      <h2>Security & Proctoring</h2>
+      <p>
+        Configure browser monitoring and candidate security preferences.
+      </p>
+    </div>
+  </div>
 
-          <div className="security-options">
-            <label className="security-option">
-              <div>
-                <strong>Prevent Copy / Paste</strong>
-                <p>Detect copy, cut and paste attempts.</p>
-              </div>
-
-              <input
-                type="checkbox"
-                name="preventCopyPasteEnabled"
-                checked={formData.preventCopyPasteEnabled}
-                onChange={handleChange}
-              />
-            </label>
-
-            <label className="security-option">
-              <div>
-                <strong>Tab Switch Detection</strong>
-                <p>Monitor when candidates leave the interview tab.</p>
-              </div>
-
-              <input
-                type="checkbox"
-                name="tabSwitchDetectionEnabled"
-                checked={formData.tabSwitchDetectionEnabled}
-                onChange={handleChange}
-              />
-            </label>
-
-            <label className="security-option">
-              <div>
-                <strong>Require Fullscreen</strong>
-                <p>Require candidates to remain in fullscreen.</p>
-              </div>
-
-              <input
-                type="checkbox"
-                name="fullscreenRequired"
-                checked={formData.fullscreenRequired}
-                onChange={handleChange}
-              />
-            </label>
-
-            <label className="security-option">
-              <div>
-                <strong>Face Detection</strong>
-                <p>Enable missing-face event monitoring.</p>
-              </div>
-
-              <input
-                type="checkbox"
-                name="faceDetectionEnabled"
-                checked={formData.faceDetectionEnabled}
-                onChange={handleChange}
-              />
-            </label>
-
-            <label className="security-option">
-              <div>
-                <strong>Multiple Face Detection</strong>
-                <p>Enable multiple-face event monitoring.</p>
-              </div>
-
-              <input
-                type="checkbox"
-                name="multipleFaceDetectionEnabled"
-                checked={formData.multipleFaceDetectionEnabled}
-                onChange={handleChange}
-              />
-            </label>
-
-            <label className="security-option">
-              <div>
-                <strong>Suspicious Gesture Detection</strong>
-                <p>Enable suspicious-gesture event monitoring.</p>
-              </div>
-
-              <input
-                type="checkbox"
-                name="suspiciousGestureDetectionEnabled"
-                checked={formData.suspiciousGestureDetectionEnabled}
-                onChange={handleChange}
-              />
-            </label>
-
-            <label className="security-option">
-              <div>
-                <strong>Camera Disconnect Detection</strong>
-                <p>Enable camera-disconnection event monitoring.</p>
-              </div>
-
-              <input
-                type="checkbox"
-                name="cameraDisconnectDetectionEnabled"
-                checked={formData.cameraDisconnectDetectionEnabled}
-                onChange={handleChange}
-              />
-            </label>
-          </div>
-
-          <div className="form-field warning-field">
-            <label htmlFor="warningLimit">
-              Warning Limit
-            </label>
-
-            <input
-              id="warningLimit"
-              name="warningLimit"
-              type="number"
-              min="1"
-              max="1000"
-              value={formData.warningLimit}
-              onChange={handleChange}
-              required
-            />
-
-            <small>
-              The backend uses this limit to handle qualifying
-              proctoring violations.
-            </small>
-          </div>
-        </section>
-
+  <ProctoringSettings
+    settings={formData}
+    onChange={handleProctoringSettingChange}
+  />
+</section>
 
         {/* QUESTION MANAGEMENT */}
 
